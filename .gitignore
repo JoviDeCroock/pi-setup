@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.DS_Store
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+config/pi/private/*
+!config/pi/private/README.md
+
+config/pi/extensions.local/*
+!config/pi/extensions.local/.gitkeep

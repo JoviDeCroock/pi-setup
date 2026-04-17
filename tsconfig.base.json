@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "lib": ["ES2023"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": ["node"],
+    "paths": {
+      "@pi-setup/shared": ["packages/shared/src/index.ts"],
+      "@pi-setup/pi-kit": ["packages/pi-kit/src/index.ts"],
+      "@pi-setup/review-gate": ["packages/extensions/review-gate/src/index.ts"],
+      "@pi-setup/repo-context": ["packages/extensions/repo-context/src/index.ts"],
+      "@pi-setup/usage-insights": ["packages/extensions/usage-insights/src/index.ts"]
+    }
+  }
+}

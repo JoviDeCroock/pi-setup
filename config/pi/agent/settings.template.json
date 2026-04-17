@@ -1,0 +1,13 @@
+{
+  "thinking": "medium",
+  "theme": "dark",
+  "compaction": {
+    "enabled": true,
+    "keepRecentTurns": 6
+  },
+  "extensions": [
+    "__PI_SETUP_ROOT__/packages/extensions/review-gate/dist/index.mjs",
+    "__PI_SETUP_ROOT__/packages/extensions/repo-context/dist/index.mjs",
+    "__PI_SETUP_ROOT__/packages/extensions/usage-insights/dist/index.mjs"
+  ]
+}

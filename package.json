@@ -1,0 +1,32 @@
+{
+  "name": "pi-setup",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean && rimraf .turbo coverage",
+    "format": "oxfmt --check .",
+    "format:write": "oxfmt --write .",
+    "lint": "oxlint .",
+    "pi:doctor": "tsx scripts/pi-doctor.ts",
+    "pi:sync": "tsx scripts/sync-pi-config.ts",
+    "test": "turbo run test",
+    "typecheck": "tsc --pretty false --noEmit -p tsconfig.typecheck.json",
+    "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@sinclair/typebox": "^0.34.40",
+    "@types/node": "^22.15.3",
+    "oxfmt": "^0.45.0",
+    "oxlint": "^1.60.0",
+    "rimraf": "^6.0.1",
+    "tsdown": "^0.21.0",
+    "tsx": "^4.20.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "packageManager": "pnpm@10.0.0"
+}
