@@ -54,6 +54,15 @@ importers:
         specifier: workspace:*
         version: link:../../shared
 
+  packages/extensions/rtk-rewrite:
+    dependencies:
+      '@pi-setup/pi-kit':
+        specifier: workspace:*
+        version: link:../../pi-kit
+      '@pi-setup/shared':
+        specifier: workspace:*
+        version: link:../../shared
+
   packages/extensions/usage-insights:
     dependencies:
       '@pi-setup/pi-kit':
@@ -63,7 +72,11 @@ importers:
         specifier: workspace:*
         version: link:../../shared
 
-  packages/pi-kit: {}
+  packages/pi-kit:
+    dependencies:
+      '@sinclair/typebox':
+        specifier: ^0.34.40
+        version: 0.34.49
 
   packages/shared: {}
 

@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type, type TSchema } from "@sinclair/typebox";
 
 export { Type };
 
@@ -38,7 +38,18 @@ export interface PiExtensionContext {
   hasUI: boolean;
   model?: PiModelLike;
   sessionManager?: PiSessionManagerLike;
+  signal?: AbortSignal;
   ui?: PiUiContext;
+}
+
+export interface PiBashToolCallInput {
+  command: string;
+  [key: string]: unknown;
+}
+
+export interface PiBashToolCallEventLike {
+  input: PiBashToolCallInput;
+  toolName: "bash";
 }
 
 export type PiEventHandler = (event: unknown, ctx: PiExtensionContext) => void | Promise<unknown>;
@@ -83,6 +94,17 @@ export function definePiExtension(setup: (pi: PiExtensionApi) => void): (pi: unk
   };
 }
 
+export function stringEnum(
+  values: readonly string[],
+  options: Record<string, unknown> = {},
+): TSchema {
+  return {
+    ...options,
+    enum: [...values],
+    type: "string",
+  } as unknown as TSchema;
+}
+
 export function textResult(text: string, details?: Record<string, unknown>): PiToolResult {
   if (details) {
     return {
@@ -104,6 +126,24 @@ export function safeNotify(
   if (ctx?.hasUI) {
     ctx.ui?.notify?.(message, level);
   }
+}
+
+export function isBashToolCallEvent(event: unknown): event is PiBashToolCallEventLike {
+  if (typeof event !== "object" || event === null) {
+    return false;
+  }
+
+  const candidate = event as { input?: unknown; toolName?: unknown };
+
+  if (candidate.toolName !== "bash") {
+    return false;
+  }
+
+  return (
+    typeof candidate.input === "object" &&
+    candidate.input !== null &&
+    typeof (candidate.input as { command?: unknown }).command === "string"
+  );
 }
 
 export function appendSessionEntry(pi: PiExtensionApi, customType: string, data: unknown): void {

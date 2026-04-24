@@ -1,8 +1,8 @@
 {
-  "name": "@pi-setup/pi-kit",
+  "name": "@pi-setup/rtk-rewrite",
   "version": "0.1.0",
   "private": true,
-  "description": "Documented Pi runtime adapters and compatibility helpers.",
+  "description": "Pi extension that rewrites Bash tool calls through RTK when available.",
   "files": [
     "dist"
   ],
@@ -21,6 +21,7 @@
     "test": "tsx --test"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.34.40"
+    "@pi-setup/pi-kit": "workspace:*",
+    "@pi-setup/shared": "workspace:*"
   }
 }

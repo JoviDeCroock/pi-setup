@@ -9,6 +9,7 @@ These are explicitly described in the Pi docs:
 - Extension modules export a default factory function that receives the Pi API.
 - Extensions can register tools with `registerTool(...)`.
 - Extensions can subscribe to lifecycle events with `pi.on(...)`.
+- `tool_call` handlers can inspect and mutate built-in Bash tool input before execution.
 - `appendEntry(...)` can persist custom session data.
 - Pi reads global and project-scoped settings files.
 - Pi reads `AGENTS.md` context files.
@@ -33,6 +34,41 @@ The docs show persisted custom entries and examples that read them back, but the
 ### JSONL session parsing
 
 Exported session files are treated as best-effort structured logs. `usage-insights` only reads the fields it owns or fields that can be safely ignored when missing.
+
+### Package-based default extensions in settings
+
+The generated `config/pi/agent/settings.template.json` uses a `packages` stanza for third-party defaults. Those defaults are sourced from `config/pi/agent/package-policy.json`, not hand-written inline in the template.
+
+The same template also sets `npmCommand` to `["pnpm"]`, which means Pi routes npm-style package lookup/install operations through `pnpm`. This follows the documented Pi `npmCommand` setting for alternate package-manager commands; the package source type still remains `npm:`.
+
+Repo policy for third-party defaults:
+
+- `npm:` package sources must use exact version pins such as `npm:pkg@1.2.3`
+- promoted npm versions must be at least 7 days old before they land in the synced config
+- `pnpm pi:doctor` and `pnpm pi:sync` enforce that policy against the checked-in defaults
+
+The current curated package names remain:
+
+- `npm:pi-powerline-footer`
+- `npm:@tmustier/pi-usage-extension`
+- `npm:pi-subagents`
+- `npm:pi-web-access`
+- `npm:pi-memory-md`
+- `git:github.com/davebcn87/pi-autoresearch@56e9f2ec6f0dc6f9997126e4f1d8a4223de2a534`
+
+This shape is based on the third-party extension READMEs, especially the documented `packages` filtering example in `tmustier/pi-extensions`, rather than on a Pi settings reference page we could verify directly. Keep those defaults explicit and easy to remove if Pi changes package resolution behavior. Git package defaults should include an explicit ref when practical so the rendered config is reproducible.
+
+### Private settings overlays
+
+`pnpm pi:sync` optionally reads `config/pi/private/settings.overlay.json` and deep-merges it into the rendered `settings.json`. This is repo policy rather than Pi behavior; Pi only sees the final generated JSON file. Keep secret or machine-local values in that ignored overlay instead of in `config/pi/agent/settings.template.json`.
+
+### Top-level extension config blocks
+
+`pi-memory-md` expects its configuration at the top level of `settings.json` under the `pi-memory-md` key (see its README). The template ships with `enabled: false` and an empty `repoUrl` so syncing is a no-op until the user fills in their own git remote. This follows the extension's README verbatim; if Pi standardizes a nested `extensions.<name>` config shape later, revisit this location.
+
+### RTK (Rust Token Killer) CLI
+
+[RTK](https://github.com/rtk-ai/rtk) itself is not a Pi extension — it's a standalone Rust binary that rewrites common commands (`ls`, `cat`, `git`, test runners, linters) into token-compressed variants. This repo's `rtk-rewrite` extension bridges Pi to that binary by listening for documented Bash `tool_call` events, calling `rtk rewrite <command>`, and mutating the Bash command when RTK returns a supported rewrite. If `rtk` is missing or cannot rewrite a command, the original command is left unchanged. `pnpm pi:doctor` reports whether `rtk` is on PATH so it stays visible without being a hard requirement.
 
 ## Contribution rule
 

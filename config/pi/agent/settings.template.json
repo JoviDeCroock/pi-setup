@@ -1,13 +1,26 @@
 {
   "thinking": "medium",
+  "collapseChangelog": true,
   "theme": "dark",
   "compaction": {
     "enabled": true,
     "keepRecentTurns": 6
   },
+  "npmCommand": ["pnpm"],
+  "packages": "__PI_SETUP_DEFAULT_PACKAGES__",
+  "pi-memory-md": {
+    "enabled": false,
+    "repoUrl": "",
+    "injection": "message-append",
+    "hooks": {
+      "sessionStart": ["pull"],
+      "sessionEnd": ["push"]
+    }
+  },
   "extensions": [
     "__PI_SETUP_ROOT__/packages/extensions/review-gate/dist/index.mjs",
     "__PI_SETUP_ROOT__/packages/extensions/repo-context/dist/index.mjs",
-    "__PI_SETUP_ROOT__/packages/extensions/usage-insights/dist/index.mjs"
+    "__PI_SETUP_ROOT__/packages/extensions/usage-insights/dist/index.mjs",
+    "__PI_SETUP_ROOT__/packages/extensions/rtk-rewrite/dist/index.mjs"
   ]
 }

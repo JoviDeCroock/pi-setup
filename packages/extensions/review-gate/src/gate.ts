@@ -71,7 +71,7 @@ export function evaluateReviewGate(input: ReviewGateInput): ReviewGateReport {
   pushPatternFinding(findings, input.changes, {
     code: "merge-markers",
     message: "Conflict markers were added to the diff.",
-    regex: /^(<{7}|={7}|>{7})$/,
+    regex: /^(<{7}|={7}|>{7})(?:\s|$)/,
     severity: "fail",
   });
 

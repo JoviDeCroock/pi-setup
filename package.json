@@ -11,8 +11,8 @@
     "pi:doctor": "tsx scripts/pi-doctor.ts",
     "pi:sync": "tsx scripts/sync-pi-config.ts",
     "test": "turbo run test",
-    "typecheck": "tsc --pretty false --noEmit -p tsconfig.typecheck.json",
-    "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm build"
+    "typecheck": "tsc --pretty false --noEmit",
+    "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm build && pnpm pi:doctor"
   },
   "devDependencies": {
     "@sinclair/typebox": "^0.34.40",

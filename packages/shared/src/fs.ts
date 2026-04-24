@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 
 const DEFAULT_IGNORED_DIRECTORIES = new Set([".git", ".turbo", "coverage", "dist", "node_modules"]);
@@ -24,6 +24,10 @@ export async function writeUtf8(filePath: string, content: string): Promise<void
 export async function copyDirectory(sourcePath: string, targetPath: string): Promise<void> {
   await ensureDirectory(targetPath);
   await cp(sourcePath, targetPath, { recursive: true, force: true });
+}
+
+export async function removePath(targetPath: string): Promise<void> {
+  await rm(targetPath, { force: true, recursive: true });
 }
 
 export async function listFiles(

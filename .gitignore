@@ -4,6 +4,7 @@ coverage/
 .turbo/
 .DS_Store
 *.tsbuildinfo
+.claude/
 
 .env
 .env.local

@@ -1,14 +1,20 @@
+import { readFile, stat } from "node:fs/promises";
+import { join } from "node:path";
+
 import { findWorkspaceRoot, runCommand } from "@pi-setup/shared";
 
 import type { ChangedFile } from "./gate.js";
 
-export type GitDiffScope = "last-commit" | "staged" | "working-tree";
+export type GitDiffScope = "all" | "last-commit" | "staged" | "working-tree";
 
 export interface GitChangeSet {
   changes: ChangedFile[];
   rootPath: string;
   scope: GitDiffScope;
 }
+
+const MAX_UNTRACKED_FILE_BYTES = 256 * 1024;
+const MAX_UNTRACKED_FILES = 200;
 
 export async function collectGitChanges(options: {
   cwd: string;
@@ -46,6 +52,10 @@ export async function collectGitChanges(options: {
   const changeMap = parseNumstat(numstatResult.stdout);
   mergePatchLines(changeMap, patchResult.stdout);
 
+  if (options.scope === "all" || options.scope === "working-tree") {
+    await mergeUntrackedFiles(changeMap, rootPath, options.signal);
+  }
+
   const changes = Array.from(changeMap.values())
     .sort(
       (left, right) =>
@@ -65,6 +75,8 @@ function buildGitDiffArgs(scope: GitDiffScope, output: "numstat" | "patch"): str
   const formatArg = output === "numstat" ? "--numstat" : "--unified=0";
 
   switch (scope) {
+    case "all":
+      return ["diff", "HEAD", formatArg, "--relative"];
     case "staged":
       return ["diff", "--cached", formatArg, "--relative"];
     case "last-commit":
@@ -133,5 +145,60 @@ function mergePatchLines(changeMap: Map<string, ChangedFile>, patch: string): vo
     if (line.startsWith("+") && !line.startsWith("+++")) {
       changeMap.get(currentPath)?.addedLines.push(line.slice(1));
     }
+  }
+}
+
+async function mergeUntrackedFiles(
+  changeMap: Map<string, ChangedFile>,
+  rootPath: string,
+  signal: AbortSignal | undefined,
+): Promise<void> {
+  const result = await runCommand("git", ["ls-files", "--others", "--exclude-standard", "-z"], {
+    allowFailure: true,
+    cwd: rootPath,
+    ...(signal ? { signal } : {}),
+    timeoutMs: 10_000,
+  });
+
+  if (result.exitCode !== 0) {
+    return;
+  }
+
+  const untrackedPaths = result.stdout.split("\0").filter(Boolean).slice(0, MAX_UNTRACKED_FILES);
+
+  for (const relativePath of untrackedPaths) {
+    if (signal?.aborted) {
+      throw new Error("Review gate cancelled while reading untracked files.");
+    }
+
+    if (changeMap.has(relativePath)) {
+      continue;
+    }
+
+    const absolutePath = join(rootPath, relativePath);
+    const fileStat = await stat(absolutePath).catch(() => undefined);
+    if (!fileStat?.isFile()) {
+      continue;
+    }
+
+    if (fileStat.size > MAX_UNTRACKED_FILE_BYTES) {
+      changeMap.set(relativePath, {
+        additions: 0,
+        addedLines: [],
+        deletions: 0,
+        path: relativePath,
+      });
+      continue;
+    }
+
+    const content = await readFile(absolutePath, "utf8").catch(() => "");
+    const addedLines = content.split(/\r?\n/);
+
+    changeMap.set(relativePath, {
+      additions: content.length === 0 ? 0 : addedLines.length,
+      addedLines,
+      deletions: 0,
+      path: relativePath,
+    });
   }
 }

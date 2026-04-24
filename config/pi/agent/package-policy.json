@@ -1,0 +1,28 @@
+{
+  "minimumReleaseAgeDays": 7,
+  "packages": [
+    {
+      "source": "npm:pi-powerline-footer@0.4.11",
+      "publishedAt": "2026-04-14T18:11:59.275Z"
+    },
+    {
+      "source": "npm:@tmustier/pi-usage-extension@0.1.5",
+      "publishedAt": "2026-04-09T14:12:03.163Z"
+    },
+    {
+      "source": "npm:pi-subagents@0.17.0",
+      "publishedAt": "2026-04-16T23:15:53.976Z"
+    },
+    {
+      "source": "npm:pi-web-access@0.10.6",
+      "publishedAt": "2026-04-04T02:14:59.997Z"
+    },
+    {
+      "source": "npm:pi-memory-md@0.1.26",
+      "publishedAt": "2026-04-16T16:27:44.307Z"
+    },
+    {
+      "source": "git:github.com/davebcn87/pi-autoresearch@56e9f2ec6f0dc6f9997126e4f1d8a4223de2a534"
+    }
+  ]
+}

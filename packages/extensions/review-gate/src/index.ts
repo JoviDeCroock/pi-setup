@@ -3,6 +3,7 @@ import {
   definePiExtension,
   normalizeToolExecutionArgs,
   safeNotify,
+  stringEnum,
   textResult,
 } from "@pi-setup/pi-kit";
 
@@ -12,7 +13,7 @@ import { collectGitChanges } from "./git.js";
 export interface ReviewGateToolInput {
   focus?: string;
   maxFiles?: number;
-  scope?: "last-commit" | "staged" | "working-tree";
+  scope?: "all" | "last-commit" | "staged" | "working-tree";
 }
 
 const reviewGateExtension = definePiExtension((pi) => {
@@ -30,11 +31,10 @@ const reviewGateExtension = definePiExtension((pi) => {
         }),
       ),
       scope: Type.Optional(
-        Type.Union([
-          Type.Literal("working-tree"),
-          Type.Literal("staged"),
-          Type.Literal("last-commit"),
-        ]),
+        stringEnum(["all", "working-tree", "staged", "last-commit"], {
+          description:
+            "Diff scope to inspect. Defaults to `all`, which includes staged, unstaged, and untracked files.",
+        }),
       ),
     }),
     execute: async (...rawArgs: unknown[]) => {
@@ -45,7 +45,7 @@ const reviewGateExtension = definePiExtension((pi) => {
         const changeSet = await collectGitChanges({
           cwd,
           maxFiles: params.maxFiles ?? 40,
-          scope: params.scope ?? "working-tree",
+          scope: params.scope ?? "all",
           ...(signal ? { signal } : {}),
         });
         const report = evaluateReviewGate({
