@@ -18,7 +18,6 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
       "@pi-setup/shared": ["./packages/shared/src/index.ts"],
       "@pi-setup/pi-kit": ["./packages/pi-kit/src/index.ts"],
