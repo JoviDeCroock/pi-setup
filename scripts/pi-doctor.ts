@@ -12,7 +12,7 @@ import {
   validateDefaultPackagePolicy,
   validatePackageEntries,
   type JsonObject,
-} from "../packages/pi-kit/src/index.js";
+} from "../packages/pi-kit/dist/index.mjs";
 
 const execFileAsync = promisify(execFile);
 

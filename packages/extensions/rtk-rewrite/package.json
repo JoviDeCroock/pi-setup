@@ -20,7 +20,7 @@
     "clean": "rimraf dist",
     "test": "tsx --test"
   },
-  "dependencies": {
+  "devDependencies": {
     "@pi-setup/pi-kit": "workspace:*",
     "@pi-setup/shared": "workspace:*"
   }

@@ -31,6 +31,8 @@ Sync refuses to write settings that point at missing built extension entry point
 - `config/pi/agent/skills/`
 - a rendered `settings.json` with absolute extension paths
 
+The managed `AGENTS.md` is intentionally small: it carries always-on operating defaults and tells the agent to suggest a Pi skill when a session reveals a repeatable workflow, checklist, or specialized procedure.
+
 The rendered settings also set:
 
 ```json
