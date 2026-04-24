@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { listFiles, readUtf8 } from "../packages/shared/src/index.js";
+import { listFiles, readUtf8 } from "../packages/shared/dist/index.mjs";
 import {
   isJsonObject,
   renderSettingsTemplateText,

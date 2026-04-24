@@ -9,13 +9,13 @@ import {
   readUtf8,
   removePath,
   writeUtf8,
-} from "../packages/shared/src/index.js";
+} from "../packages/shared/dist/index.mjs";
 import {
   isJsonObject,
   renderSettingsTemplateText,
   validateDefaultPackagePolicy,
   type JsonObject,
-} from "../packages/pi-kit/src/index.js";
+} from "../packages/pi-kit/dist/index.mjs";
 
 interface CliOptions {
   allowMissingExtensions: boolean;
