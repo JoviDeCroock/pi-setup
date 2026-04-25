@@ -37,7 +37,6 @@ When Pi behavior changes, this package is the first place to adapt.
 
 `packages/extensions/*/` contains thin runtime entry points plus testable core logic.
 
-- `review-gate` reads the git diff and returns a release-readiness summary
 - `repo-context` builds a focused repository map for a query
 - `usage-insights` records compact usage points and reports over them
 - `rtk-rewrite` rewrites supported Bash tool commands through the optional RTK CLI

@@ -45,17 +45,8 @@ importers:
         specifier: workspace:*
         version: link:../../shared
 
-  packages/extensions/review-gate:
-    dependencies:
-      '@pi-setup/pi-kit':
-        specifier: workspace:*
-        version: link:../../pi-kit
-      '@pi-setup/shared':
-        specifier: workspace:*
-        version: link:../../shared
-
   packages/extensions/rtk-rewrite:
-    dependencies:
+    devDependencies:
       '@pi-setup/pi-kit':
         specifier: workspace:*
         version: link:../../pi-kit

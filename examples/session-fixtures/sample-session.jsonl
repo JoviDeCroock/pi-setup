@@ -1,3 +1,0 @@
-{"type":"custom","customType":"usage-insights","data":{"timestamp":"2026-04-16T08:00:00.000Z","turnIndex":1,"toolNames":["read","bash"],"model":"gpt-5.4","contextTokens":1200}}
-{"type":"custom","customType":"usage-insights","data":{"timestamp":"2026-04-16T08:01:00.000Z","turnIndex":2,"toolNames":["grep"],"model":"gpt-5.4","contextTokens":1450}}
-{"type":"custom","customType":"usage-insights","data":{"timestamp":"2026-04-16T08:02:30.000Z","turnIndex":3,"toolNames":["read","write"],"model":"gpt-5.4","contextTokens":1675}}

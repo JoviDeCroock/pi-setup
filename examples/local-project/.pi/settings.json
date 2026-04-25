@@ -1,9 +1,0 @@
-{
-  "thinking": "medium",
-  "extensions": [
-    "../../../packages/extensions/review-gate/dist/index.mjs",
-    "../../../packages/extensions/repo-context/dist/index.mjs",
-    "../../../packages/extensions/usage-insights/dist/index.mjs",
-    "../../../packages/extensions/rtk-rewrite/dist/index.mjs"
-  ]
-}

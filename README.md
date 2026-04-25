@@ -11,7 +11,6 @@ The repo is optimized for maintainability and verification, not for a single dem
 
 - A workspace-managed extension lab with shared utilities and a Pi compatibility layer
 - Four repo-built extensions:
-  - `review-gate` for change-risk and review-readiness checks
   - `repo-context` for repository mapping and targeted context snapshots
   - `usage-insights` for session telemetry and lightweight reporting
   - `rtk-rewrite` for optional RTK-backed Bash command rewrites
@@ -87,10 +86,6 @@ scripts/                   Repo automation for sync and diagnostics
 - `pnpm pi:sync` renders `config/pi/agent/settings.template.json` into a concrete Pi config and copies prompts and skills into your Pi home
 
 ## Starter extensions
-
-### `review-gate`
-
-Registers `review_gate_check`, a tool that inspects current git changes and returns a review-focused gate summary. By default it checks staged, unstaged, and untracked files. It flags large diffs, missing tests, `debugger` statements, merge markers, and noisy debug leftovers.
 
 ### `repo-context`
 
