@@ -48,6 +48,14 @@ The rendered global settings also declare curated package-based defaults. The pi
 - `npm:pi-subagents` — async subagent delegation with chains, parallel execution, and TUI clarification
 - `npm:pi-web-access` — `web_search`, `code_search`, `fetch_content`, and `get_search_content` tools (works zero-config via Exa MCP)
 
+The repo-built `tool-pruner` extension keeps the default callable tool set to `read`, `bash`, `edit`, `write`, `repo_context_snapshot`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Keep the packages installed but opt additional tools back in per session with environment variables, for example:
+
+```bash
+PI_TOOL_PRUNER_EXTRA_ALLOW="code_search" pi
+PI_TOOL_PRUNER_ALLOW="read,bash,edit,write,subagent,subagent_status" pi
+PI_TOOL_PRUNER_DISABLED=true pi
+```
+
 ## RTK (Rust Token Killer)
 
 [RTK](https://github.com/rtk-ai/rtk) is a standalone CLI that compresses the output of common shell commands (`ls`, `cat`, `grep`, `git`, test runners, linters, etc.) before the agent sees it. RTK itself does not ship a Pi extension, so this repo provides `rtk-rewrite`, a small Pi extension that uses `rtk rewrite` to transparently rewrite Pi Bash tool calls like `git status` into `rtk git status`.

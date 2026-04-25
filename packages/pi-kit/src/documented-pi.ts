@@ -62,6 +62,12 @@ export interface PiToolDefinition {
   parameters: unknown;
 }
 
+export interface PiToolInfo {
+  description?: string;
+  name: string;
+  sourceInfo?: Record<string, unknown>;
+}
+
 export interface PiCommandDefinition {
   description: string;
   handler?: (args: string, ctx: PiExtensionContext) => void | Promise<void>;
@@ -69,9 +75,12 @@ export interface PiCommandDefinition {
 
 export interface PiExtensionApi {
   appendEntry?: (customType: string, data?: unknown) => void;
+  getActiveTools?: () => string[];
+  getAllTools?: () => PiToolInfo[];
   on: (event: string, handler: PiEventHandler) => void;
   registerCommand?: (name: string, definition: PiCommandDefinition) => void;
   registerTool: (tool: PiToolDefinition) => void;
+  setActiveTools?: (names: string[]) => void;
 }
 
 export interface PiToolExecutionArgs<TParameters> {
@@ -148,6 +157,27 @@ export function isBashToolCallEvent(event: unknown): event is PiBashToolCallEven
 
 export function appendSessionEntry(pi: PiExtensionApi, customType: string, data: unknown): void {
   pi.appendEntry?.(customType, data);
+}
+
+export function getAllToolNames(pi: PiExtensionApi): string[] {
+  const tools = pi.getAllTools?.();
+
+  if (!Array.isArray(tools)) {
+    return [];
+  }
+
+  return tools
+    .map((tool) => tool.name)
+    .filter((name): name is string => typeof name === "string" && name.length > 0);
+}
+
+export function setActivePiTools(pi: PiExtensionApi, names: string[]): boolean {
+  if (!pi.setActiveTools) {
+    return false;
+  }
+
+  pi.setActiveTools(names);
+  return true;
 }
 
 export function getSessionEntries(ctx: PiExtensionContext | undefined): PiSessionEntryLike[] {

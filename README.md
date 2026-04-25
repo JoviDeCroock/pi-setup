@@ -14,7 +14,8 @@ The repo is optimized for maintainability and verification, not for a single dem
   - `repo-context` for repository mapping and targeted context snapshots
   - `usage-insights` for session telemetry and lightweight reporting
   - `rtk-rewrite` for optional RTK-backed Bash command rewrites
-- Six curated third-party extensions in the generated global Pi config:
+  - `tool-pruner` for keeping only the most useful third-party callable tools in the prompt by default
+- Four curated third-party extensions in the generated global Pi config:
   - `pi-powerline-footer`
   - `@tmustier/pi-usage-extension`
   - `pi-subagents` for async subagent delegation
@@ -96,6 +97,15 @@ Registers `usage_insights_report`, plus a minimal `turn_end` hook that records c
 
 Subscribes to Pi's `tool_call` event for the built-in Bash tool. When the standalone `rtk` binary is on `PATH`, it calls `rtk rewrite <command>` and mutates supported Bash commands before execution (for example, `git status` becomes `rtk git status`). If RTK is missing or cannot rewrite a command, the extension passes the original command through unchanged.
 
+### `tool-pruner`
+
+Uses Pi's documented active-tool API to keep the callable tool list small before each agent turn. By default it keeps `read`, `bash`, `edit`, `write`, `repo_context_snapshot`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Override with environment variables:
+
+- `PI_TOOL_PRUNER_ALLOW="read,bash,edit,write,web_search"` to replace the default allowlist
+- `PI_TOOL_PRUNER_EXTRA_ALLOW="code_search,subagent_status"` to add to the default allowlist
+- `PI_TOOL_PRUNER_DENY="usage_insights_report"` to remove entries from the final allowlist
+- `PI_TOOL_PRUNER_DISABLED=true` to opt out for a session
+
 ## Default external packages
 
 The generated global `settings.json` also includes curated third-party package defaults from `config/pi/agent/package-policy.json`. Every `npm:` source is pinned to an exact version, and the repo only promotes npm releases once they are at least 7 days old.
@@ -105,9 +115,9 @@ The synced Pi config also sets `npmCommand` to `["pnpm"]`, so Pi runs package lo
 - `npm:pi-powerline-footer` for the powerline-style footer and related UI affordances
 - `npm:@tmustier/pi-usage-extension` for the `/usage` dashboard
 - `npm:pi-subagents` for delegating work to specialized subagents with chains and async support
-- `npm:pi-web-access` for `web_search`, `fetch_content`, and `get_search_content` tools
+- `npm:pi-web-access` for `web_search`, `code_search`, `fetch_content`, and `get_search_content` tools
 
-The local example project intentionally stays focused on the repo-built extensions so it remains self-contained.
+`tool-pruner` keeps only the commonly useful third-party tools active by default: `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Less frequently needed tools such as `code_search` stay installed but out of the model prompt until you opt them back in with `PI_TOOL_PRUNER_ALLOW` or `PI_TOOL_PRUNER_EXTRA_ALLOW`.
 
 ## RTK (token pruning)
 

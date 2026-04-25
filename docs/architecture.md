@@ -30,6 +30,7 @@ These utilities stay Pi-agnostic so they can support scripts and extension code 
 - It normalizes inconsistent tool execution signatures
 - It keeps best-effort session-entry access isolated from business logic
 - It exposes narrow guards for documented event payloads such as mutable Bash `tool_call` input
+- It wraps active-tool inspection and pruning so prompt-shaping behavior stays explicit
 
 When Pi behavior changes, this package is the first place to adapt.
 
@@ -40,6 +41,7 @@ When Pi behavior changes, this package is the first place to adapt.
 - `repo-context` builds a focused repository map for a query
 - `usage-insights` records compact usage points and reports over them
 - `rtk-rewrite` rewrites supported Bash tool commands through the optional RTK CLI
+- `tool-pruner` keeps the active callable tool set small before each agent turn
 
 ## Tooling
 

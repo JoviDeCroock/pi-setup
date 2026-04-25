@@ -23,7 +23,6 @@ pnpm verify
 5. Add tests beside the package.
 6. Update:
    - `config/pi/agent/settings.template.json`
-   - `examples/local-project/.pi/settings.json`
    - `README.md` and any relevant docs
 
 ## Updating default npm packages
@@ -55,6 +54,10 @@ Use `usage_insights_report` to summarize active-session usage or inspect a saved
 ### RTK Rewrite
 
 `rtk-rewrite` listens for Pi Bash tool calls and, when the standalone `rtk` binary is on `PATH`, rewrites supported commands through `rtk rewrite` before execution. It is intentionally pass-through when RTK is missing or a command has no RTK equivalent.
+
+### Tool Pruner
+
+`tool-pruner` uses Pi's active-tool API to keep heavy third-party tool schemas out of the prompt by default. Configure it with `PI_TOOL_PRUNER_ALLOW`, `PI_TOOL_PRUNER_EXTRA_ALLOW`, `PI_TOOL_PRUNER_DENY`, or `PI_TOOL_PRUNER_DISABLED` when a session needs a different callable tool set.
 
 ## Design rule
 

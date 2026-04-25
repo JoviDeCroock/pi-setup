@@ -23,7 +23,8 @@
       "@pi-setup/pi-kit": ["./packages/pi-kit/src/index.ts"],
       "@pi-setup/repo-context": ["./packages/extensions/repo-context/src/index.ts"],
       "@pi-setup/usage-insights": ["./packages/extensions/usage-insights/src/index.ts"],
-      "@pi-setup/rtk-rewrite": ["./packages/extensions/rtk-rewrite/src/index.ts"]
+      "@pi-setup/rtk-rewrite": ["./packages/extensions/rtk-rewrite/src/index.ts"],
+      "@pi-setup/tool-pruner": ["./packages/extensions/tool-pruner/src/index.ts"]
     }
   }
 }

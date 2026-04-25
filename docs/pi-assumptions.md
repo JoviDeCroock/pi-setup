@@ -11,6 +11,7 @@ These are explicitly described in the Pi docs:
 - Extensions can subscribe to lifecycle events with `pi.on(...)`.
 - `tool_call` handlers can inspect and mutate built-in Bash tool input before execution.
 - `appendEntry(...)` can persist custom session data.
+- `getAllTools(...)` and `setActiveTools(...)` can inspect and control active tools at runtime.
 - Pi reads global and project-scoped settings files.
 - Pi reads `AGENTS.md` context files.
 
@@ -53,6 +54,8 @@ The current curated package names remain:
 - `npm:@tmustier/pi-usage-extension`
 - `npm:pi-subagents`
 - `npm:pi-web-access`
+
+The repo-built `tool-pruner` extension keeps only selected callable tools from those packages active by default; the packages remain installed so other tools can be re-enabled through environment-configured allowlists when needed.
 
 This shape is based on the third-party extension READMEs, especially the documented `packages` filtering example in `tmustier/pi-extensions`, rather than on a Pi settings reference page we could verify directly. Keep those defaults explicit and easy to remove if Pi changes package resolution behavior. Git package defaults should include an explicit ref when practical so the rendered config is reproducible.
 

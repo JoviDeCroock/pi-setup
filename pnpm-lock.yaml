@@ -54,6 +54,12 @@ importers:
         specifier: workspace:*
         version: link:../../shared
 
+  packages/extensions/tool-pruner:
+    dependencies:
+      '@pi-setup/pi-kit':
+        specifier: workspace:*
+        version: link:../../pi-kit
+
   packages/extensions/usage-insights:
     dependencies:
       '@pi-setup/pi-kit':
