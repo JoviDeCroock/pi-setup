@@ -72,8 +72,6 @@ export function createToolPrunerExtension(options: ToolPrunerExtensionOptions = 
       lastKept = keptKey;
     };
 
-    apply();
-
     pi.on("session_start", async (_event, ctx) => {
       apply(ctx);
     });

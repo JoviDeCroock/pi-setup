@@ -27,8 +27,11 @@ test("applyToolPruner sets active tools to the allowed subset", () => {
   assert.deepEqual(result.disabledNames, ["subagent", "web_search"]);
 });
 
-test("tool pruner reapplies before each agent start", async () => {
+test("tool pruner defers action methods until runtime events", async () => {
   let activeTools: string[] = [];
+  let sessionStart:
+    | ((event: unknown, ctx: { cwd: string; hasUI: boolean }) => Promise<void>)
+    | undefined;
   let beforeAgentStart:
     | ((event: unknown, ctx: { cwd: string; hasUI: boolean }) => Promise<void>)
     | undefined;
@@ -38,6 +41,9 @@ test("tool pruner reapplies before each agent start", async () => {
   extension({
     getAllTools: () => availableTools,
     on(eventName: string, handler: typeof beforeAgentStart) {
+      if (eventName === "session_start") {
+        sessionStart = handler;
+      }
       if (eventName === "before_agent_start") {
         beforeAgentStart = handler;
       }
@@ -48,6 +54,9 @@ test("tool pruner reapplies before each agent start", async () => {
     },
   });
 
+  assert.deepEqual(activeTools, []);
+
+  await sessionStart?.({}, { cwd: process.cwd(), hasUI: false });
   assert.deepEqual(activeTools, ["read"]);
 
   availableTools.push({ name: "web_search" });
