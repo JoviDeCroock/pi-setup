@@ -33,6 +33,11 @@ Sync refuses to write settings that point at missing built extension entry point
 
 The managed `AGENTS.md` is intentionally small: it carries always-on operating defaults and tells the agent to suggest a Pi skill when a session reveals a repeatable workflow, checklist, or specialized procedure.
 
+Managed skills currently include:
+
+- `extension-maintainer` for maintaining this repository's Pi extensions with tests, docs, and verification.
+- `session-lessons` for reviewing Pi session history, diagnosing repeated assistant mistakes, and drafting corrective skills or context updates.
+
 The rendered settings also set:
 
 ```json

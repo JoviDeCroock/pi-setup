@@ -22,6 +22,8 @@ The repo is optimized for maintainability and verification, not for a single dem
   - `pi-web-access` for web search and content extraction
 - Optional RTK (Rust Token Killer) CLI support to prune command-output tokens before they reach the agent
 - Personal Pi config templates, prompts, and skills under `config/pi/agent/`
+  - `extension-maintainer` for this repository's extension workflow
+  - `session-lessons` for inspecting Pi session history and turning repeated assistant mistakes into corrective skills or context updates
 - Example project-scoped `.pi/settings.json` wiring under `examples/local-project/`
 - Scripts for syncing config and checking install health
 - Unit tests, linting, formatting, and GitHub Actions CI
