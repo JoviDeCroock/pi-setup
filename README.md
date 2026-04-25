@@ -19,8 +19,6 @@ The repo is optimized for maintainability and verification, not for a single dem
   - `@tmustier/pi-usage-extension`
   - `pi-subagents` for async subagent delegation
   - `pi-web-access` for web search and content extraction
-  - `pi-memory-md` for git-backed markdown memory (requires user `repoUrl`)
-  - `pi-autoresearch` for autonomous experiment loops (`/autoresearch` dashboard + tools)
 - Optional RTK (Rust Token Killer) CLI support to prune command-output tokens before they reach the agent
 - Personal Pi config templates, prompts, and skills under `config/pi/agent/`
 - Example project-scoped `.pi/settings.json` wiring under `examples/local-project/`
@@ -61,7 +59,6 @@ pnpm pi:sync
 ### After the first sync
 
 - Restart any running Pi session (or run `/reload`) so the new extensions load.
-- If you enabled `pi-memory-md`, set `pi-memory-md.repoUrl` in `~/.pi/agent/settings.json` and run `/memory-init` inside Pi.
 - Re-run `pnpm pi:sync` whenever you change anything under [config/pi/agent/](config/pi/agent/) or rebuild an extension.
 
 ## Repository layout
@@ -109,8 +106,6 @@ The synced Pi config also sets `npmCommand` to `["pnpm"]`, so Pi runs package lo
 - `npm:@tmustier/pi-usage-extension` for the `/usage` dashboard
 - `npm:pi-subagents` for delegating work to specialized subagents with chains and async support
 - `npm:pi-web-access` for `web_search`, `fetch_content`, and `get_search_content` tools
-- `npm:pi-memory-md` for Letta-style git-backed markdown memory (ships disabled; set `pi-memory-md.repoUrl` and flip `enabled` to `true` to activate)
-- `git:github.com/davebcn87/pi-autoresearch@56e9f2ec6f0dc6f9997126e4f1d8a4223de2a534` for autonomous optimization loops — `init_experiment`, `run_experiment`, `log_experiment` tools plus an `/autoresearch` dashboard
 
 The local example project intentionally stays focused on the repo-built extensions so it remains self-contained.
 

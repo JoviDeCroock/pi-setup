@@ -11,21 +11,11 @@ test("renderSettingsTemplateText injects package defaults and private overlays",
         source: "npm:pi-web-access@0.10.6",
       },
     ],
-    overlay: {
-      "pi-memory-md": {
-        enabled: true,
-        repoUrl: "git@github.com:demo/memory.git",
-      },
-    },
+    overlay: {},
     template: JSON.stringify(
       {
         extensions: ["__PI_SETUP_ROOT__/dist/index.mjs"],
         packages: "__PI_SETUP_DEFAULT_PACKAGES__",
-        "pi-memory-md": {
-          enabled: false,
-          injection: "message-append",
-          repoUrl: "",
-        },
       },
       null,
       2,
@@ -36,14 +26,10 @@ test("renderSettingsTemplateText injects package defaults and private overlays",
   const settings = JSON.parse(rendered) as {
     extensions: string[];
     packages: Array<{ publishedAt?: string; source: string }>;
-    "pi-memory-md": { enabled: boolean; injection: string; repoUrl: string };
   };
 
   assert.deepEqual(settings.extensions, ["/repo/dist/index.mjs"]);
   assert.deepEqual(settings.packages, [{ source: "npm:pi-web-access@0.10.6" }]);
-  assert.equal(settings["pi-memory-md"].enabled, true);
-  assert.equal(settings["pi-memory-md"].injection, "message-append");
-  assert.equal(settings["pi-memory-md"].repoUrl, "git@github.com:demo/memory.git");
 });
 
 test("mergeJsonObjects deep-merges objects and replaces arrays", () => {

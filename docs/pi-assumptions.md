@@ -53,18 +53,12 @@ The current curated package names remain:
 - `npm:@tmustier/pi-usage-extension`
 - `npm:pi-subagents`
 - `npm:pi-web-access`
-- `npm:pi-memory-md`
-- `git:github.com/davebcn87/pi-autoresearch@56e9f2ec6f0dc6f9997126e4f1d8a4223de2a534`
 
 This shape is based on the third-party extension READMEs, especially the documented `packages` filtering example in `tmustier/pi-extensions`, rather than on a Pi settings reference page we could verify directly. Keep those defaults explicit and easy to remove if Pi changes package resolution behavior. Git package defaults should include an explicit ref when practical so the rendered config is reproducible.
 
 ### Private settings overlays
 
 `pnpm pi:sync` optionally reads `config/pi/private/settings.overlay.json` and deep-merges it into the rendered `settings.json`. This is repo policy rather than Pi behavior; Pi only sees the final generated JSON file. Keep secret or machine-local values in that ignored overlay instead of in `config/pi/agent/settings.template.json`.
-
-### Top-level extension config blocks
-
-`pi-memory-md` expects its configuration at the top level of `settings.json` under the `pi-memory-md` key (see its README). The template ships with `enabled: false` and an empty `repoUrl` so syncing is a no-op until the user fills in their own git remote. This follows the extension's README verbatim; if Pi standardizes a nested `extensions.<name>` config shape later, revisit this location.
 
 ### RTK (Rust Token Killer) CLI
 
