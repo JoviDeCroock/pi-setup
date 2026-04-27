@@ -7,7 +7,7 @@
 `config/pi/agent/` holds the global Pi home content that gets synced into `~/.pi/agent`.
 
 - `settings.template.json` is rendered with absolute workspace paths
-- `AGENTS.md` holds global Pi guidance
+- `AGENTS.md` holds global Pi guidance and guarded optional blocks rendered by `pi:sync`
 - `prompts/` and `skills/` add reusable operator workflows
 
 ## 2. Shared libraries

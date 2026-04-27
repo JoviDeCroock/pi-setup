@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import { listFiles, readUtf8 } from "../packages/shared/src/index.js";
 import {
   isJsonObject,
+  renderAgentsTemplateText,
   renderSettingsTemplateText,
   validateDefaultPackagePolicy,
   validatePackageEntries,
@@ -27,10 +28,15 @@ interface DefaultPackagePolicy {
   }>;
 }
 
+interface PrivateAgentContext {
+  vault?: string;
+}
+
 async function main(): Promise<void> {
   const agentHome = process.env.PI_AGENT_HOME || join(os.homedir(), ".pi", "agent");
   const templatePath = join(repoRoot, "config", "pi", "agent", "settings.template.json");
   const packagePolicyPath = join(repoRoot, "config", "pi", "agent", "package-policy.json");
+  const agentsTemplatePath = join(repoRoot, "config", "pi", "agent", "AGENTS.md");
   const privateSettingsOverlayPath = join(
     repoRoot,
     "config",
@@ -38,9 +44,19 @@ async function main(): Promise<void> {
     "private",
     "settings.overlay.json",
   );
+  const privateAgentContextPath = join(repoRoot, "config", "pi", "private", "agent-context.json");
   const packagePolicy = await readDefaultPackagePolicy(packagePolicyPath);
   const template = await readUtf8(templatePath);
-  const privateSettingsOverlay = await readOptionalJsonObject(privateSettingsOverlayPath);
+  const agentsTemplate = await readUtf8(agentsTemplatePath);
+  const privateSettingsOverlay = await readOptionalJsonObject(
+    privateSettingsOverlayPath,
+    "private settings overlay",
+  );
+  const privateAgentContext = await readOptionalPrivateAgentContext(privateAgentContextPath);
+  const renderedAgents = renderAgentsTemplateText({
+    ...(privateAgentContext?.vault ? { vault: privateAgentContext.vault } : {}),
+    template: agentsTemplate,
+  });
   const rendered = renderSettingsTemplateText({
     defaultPackages: packagePolicy.packages,
     ...(privateSettingsOverlay ? { overlay: privateSettingsOverlay } : {}),
@@ -60,9 +76,10 @@ async function main(): Promise<void> {
     { label: "Pi settings template", path: templatePath, required: true },
     { label: "Pi package policy", path: packagePolicyPath, required: true },
     { label: "private settings overlay", path: privateSettingsOverlayPath, required: false },
+    { label: "private agent context", path: privateAgentContextPath, required: false },
     {
-      label: "global Pi AGENTS",
-      path: join(repoRoot, "config", "pi", "agent", "AGENTS.md"),
+      label: "global Pi AGENTS template",
+      path: agentsTemplatePath,
       required: true,
     },
     {
@@ -96,6 +113,17 @@ async function main(): Promise<void> {
     if (check.required && !exists) {
       failed = true;
     }
+  }
+
+  if (renderedAgents.includes("<VAULT>")) {
+    failed = true;
+    console.log("- [INVALID] AGENTS vault placeholder: rendered AGENTS.md still contains <VAULT>");
+  } else {
+    console.log(
+      `- [${privateAgentContext?.vault ? "OK" : "OPTIONAL"}] AGENTS vault placeholder: ${
+        privateAgentContext?.vault ? "configured" : "not configured"
+      }`,
+    );
   }
 
   const skillValidations = await validateSkills(join(repoRoot, "config", "pi", "agent", "skills"));
@@ -230,17 +258,42 @@ async function readDefaultPackagePolicy(policyPath: string): Promise<DefaultPack
   return JSON.parse(rawPolicy) as DefaultPackagePolicy;
 }
 
-async function readOptionalJsonObject(filePath: string): Promise<JsonObject | undefined> {
+async function readOptionalJsonObject(
+  filePath: string,
+  label: string,
+): Promise<JsonObject | undefined> {
   if (!(await pathExists(filePath))) {
     return undefined;
   }
 
   const parsed = JSON.parse(await readUtf8(filePath)) as unknown;
   if (!isJsonObject(parsed)) {
-    throw new Error(`Expected private settings overlay to be a JSON object: ${filePath}`);
+    throw new Error(`Expected ${label} to be a JSON object: ${filePath}`);
   }
 
   return parsed;
+}
+
+async function readOptionalPrivateAgentContext(
+  filePath: string,
+): Promise<PrivateAgentContext | undefined> {
+  const parsed = await readOptionalJsonObject(filePath, "private agent context");
+  if (!parsed) {
+    return undefined;
+  }
+
+  const vault = parsed["vault"];
+  if (vault === undefined) {
+    return {};
+  }
+
+  if (typeof vault !== "string" || vault.trim().length === 0) {
+    throw new Error(
+      `Expected private agent context \`vault\` to be a non-empty string: ${filePath}`,
+    );
+  }
+
+  return { vault: vault.trim() };
 }
 
 async function probeRtk(): Promise<{ detail: string; ok: boolean }> {

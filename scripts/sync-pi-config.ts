@@ -12,6 +12,7 @@ import {
 } from "../packages/shared/src/index.js";
 import {
   isJsonObject,
+  renderAgentsTemplateText,
   renderSettingsTemplateText,
   validateDefaultPackagePolicy,
   type JsonObject,
@@ -32,6 +33,10 @@ interface DefaultPackagePolicy {
   }>;
 }
 
+interface PrivateAgentContext {
+  vault?: string;
+}
+
 const repoRoot = resolve(fileURLToPath(new URL("../", import.meta.url)));
 
 async function main(): Promise<void> {
@@ -39,6 +44,7 @@ async function main(): Promise<void> {
   const sourceRoot = join(repoRoot, "config", "pi", "agent");
   const promptsSource = join(sourceRoot, "prompts");
   const skillsSource = join(sourceRoot, "skills");
+  const agentsTemplatePath = join(sourceRoot, "AGENTS.md");
   const privateSettingsOverlayPath = join(
     repoRoot,
     "config",
@@ -46,10 +52,16 @@ async function main(): Promise<void> {
     "private",
     "settings.overlay.json",
   );
+  const privateAgentContextPath = join(repoRoot, "config", "pi", "private", "agent-context.json");
   const defaultPackagePolicy = await readDefaultPackagePolicy(
     join(sourceRoot, "package-policy.json"),
   );
-  const privateSettingsOverlay = await readOptionalJsonObject(privateSettingsOverlayPath);
+  const privateSettingsOverlay = await readOptionalJsonObject(
+    privateSettingsOverlayPath,
+    "private settings overlay",
+  );
+  const privateAgentContext = await readOptionalPrivateAgentContext(privateAgentContextPath);
+  const renderedAgents = await renderAgentsTemplate(agentsTemplatePath, privateAgentContext);
   const renderedSettings = await renderSettingsTemplate(
     join(sourceRoot, "settings.template.json"),
     repoRoot,
@@ -66,6 +78,12 @@ async function main(): Promise<void> {
     console.log(`- Target: ${options.targetDirectory}`);
     console.log(
       `- Private overlay: ${privateSettingsOverlay ? privateSettingsOverlayPath : "none"}`,
+    );
+    console.log(
+      `- Private agent context: ${privateAgentContext ? privateAgentContextPath : "none"}`,
+    );
+    console.log(
+      `- Vault placeholder: ${privateAgentContext?.vault ? "configured" : "not configured"}`,
     );
     console.log(`- Missing built extensions: ${missingExtensions.length}`);
     for (const missingPath of missingExtensions) {
@@ -89,16 +107,17 @@ async function main(): Promise<void> {
   await removePath(join(options.targetDirectory, "skills"));
   await copyDirectory(promptsSource, join(options.targetDirectory, "prompts"));
   await copyDirectory(skillsSource, join(options.targetDirectory, "skills"));
-  await writeUtf8(
-    join(options.targetDirectory, "AGENTS.md"),
-    await readUtf8(join(sourceRoot, "AGENTS.md")),
-  );
+  await writeUtf8(join(options.targetDirectory, "AGENTS.md"), renderedAgents);
   await writeUtf8(join(options.targetDirectory, "settings.json"), renderedSettings);
 
   console.log(`Synced Pi config to ${options.targetDirectory}`);
 
   if (privateSettingsOverlay) {
     console.log(`Applied private settings overlay: ${privateSettingsOverlayPath}`);
+  }
+
+  if (privateAgentContext?.vault) {
+    console.log(`Rendered AGENTS.md vault placeholder from: ${privateAgentContextPath}`);
   }
 }
 
@@ -151,6 +170,18 @@ async function renderSettingsTemplate(
   });
 }
 
+async function renderAgentsTemplate(
+  templatePath: string,
+  privateAgentContext: PrivateAgentContext | undefined,
+): Promise<string> {
+  const template = await readUtf8(templatePath);
+
+  return renderAgentsTemplateText({
+    ...(privateAgentContext?.vault ? { vault: privateAgentContext.vault } : {}),
+    template,
+  });
+}
+
 async function findMissingPaths(paths: string[]): Promise<string[]> {
   const missing: string[] = [];
 
@@ -175,17 +206,42 @@ async function readDefaultPackagePolicy(policyPath: string): Promise<DefaultPack
   return policy;
 }
 
-async function readOptionalJsonObject(filePath: string): Promise<JsonObject | undefined> {
+async function readOptionalJsonObject(
+  filePath: string,
+  label: string,
+): Promise<JsonObject | undefined> {
   if (!(await pathExists(filePath))) {
     return undefined;
   }
 
   const parsed = JSON.parse(await readUtf8(filePath)) as unknown;
   if (!isJsonObject(parsed)) {
-    throw new Error(`Expected private settings overlay to be a JSON object: ${filePath}`);
+    throw new Error(`Expected ${label} to be a JSON object: ${filePath}`);
   }
 
   return parsed;
+}
+
+async function readOptionalPrivateAgentContext(
+  filePath: string,
+): Promise<PrivateAgentContext | undefined> {
+  const parsed = await readOptionalJsonObject(filePath, "private agent context");
+  if (!parsed) {
+    return undefined;
+  }
+
+  const vault = parsed["vault"];
+  if (vault === undefined) {
+    return {};
+  }
+
+  if (typeof vault !== "string" || vault.trim().length === 0) {
+    throw new Error(
+      `Expected private agent context \`vault\` to be a non-empty string: ${filePath}`,
+    );
+  }
+
+  return { vault: vault.trim() };
 }
 
 async function pathExists(candidatePath: string): Promise<boolean> {

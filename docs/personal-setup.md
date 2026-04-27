@@ -24,14 +24,24 @@ pnpm pi:sync -- --target C:\\temp\\pi-agent
 
 Sync refuses to write settings that point at missing built extension entry points. Run `pnpm build` first, or pass `--allow-missing-extensions` only when you intentionally want a partial config.
 
-`pnpm pi:sync` copies:
+`pnpm pi:sync` installs:
 
-- `config/pi/agent/AGENTS.md`
+- a rendered `AGENTS.md` from `config/pi/agent/AGENTS.md`
 - `config/pi/agent/prompts/`
 - `config/pi/agent/skills/`
 - a rendered `settings.json` with absolute extension paths
 
 The managed `AGENTS.md` is intentionally small: it carries always-on operating defaults and tells the agent to suggest a Pi skill when a session reveals a repeatable workflow, checklist, or specialized procedure.
+
+It can also render an opt-in personal knowledge-capture line. Copy `config/pi/private/agent-context.example.json` to ignored `config/pi/private/agent-context.json`, then set a local vault:
+
+```json
+{
+  "vault": "/Users/example/Documents/brain"
+}
+```
+
+When `vault` exists, `pnpm pi:sync` includes the optional AGENTS instruction and replaces `<VAULT>` with that path, producing guidance to offer notes under `<VAULT>/00-inbox/`. Without `vault`, the line is omitted entirely.
 
 Managed skills currently include:
 
@@ -103,8 +113,11 @@ It verifies the config template, prompts, skills, and built extension entry poin
 For skills specifically, `pnpm pi:doctor` now checks that each `SKILL.md` starts with YAML frontmatter and includes the required `name` and `description` fields.
 For third-party package defaults, it also checks that every `npm:` source is pinned to an exact version and that the curated versions in `config/pi/agent/package-policy.json` satisfy the 7-day minimum release age. It validates the final rendered settings after applying `config/pi/private/settings.overlay.json` when that private overlay exists.
 
-## Private overlays
+## Private sync inputs
 
-Use `config/pi/private/` for anything that should stay local to your workstation. A `settings.overlay.json` file in that directory is ignored by git and merged into the rendered Pi settings by `pnpm pi:sync`.
+Use `config/pi/private/` for anything that should stay local to your workstation. Supported ignored files include:
+
+- `settings.overlay.json`, deep-merged into the rendered Pi settings by `pnpm pi:sync`.
+- `agent-context.json`, used to render optional AGENTS guidance such as the `<VAULT>` knowledge-capture line.
 
 Use `config/pi/extensions.local/` for one-off local extension files or experiments that should not be tracked in git.

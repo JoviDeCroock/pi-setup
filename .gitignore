@@ -12,6 +12,8 @@ coverage/
 
 config/pi/private/*
 !config/pi/private/README.md
+!config/pi/private/agent-context.example.json
+config/pi/private/agent-context.json
 
 config/pi/extensions.local/*
 !config/pi/extensions.local/.gitkeep

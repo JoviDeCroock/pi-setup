@@ -1,3 +1,4 @@
+export * from "./agents-template.js";
 export * from "./documented-pi.js";
 export * from "./package-policy.js";
 export * from "./settings-template.js";

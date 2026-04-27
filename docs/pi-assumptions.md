@@ -59,9 +59,9 @@ The repo-built `tool-pruner` extension keeps only selected callable tools from t
 
 This shape is based on the third-party extension READMEs, especially the documented `packages` filtering example in `tmustier/pi-extensions`, rather than on a Pi settings reference page we could verify directly. Keep those defaults explicit and easy to remove if Pi changes package resolution behavior. Git package defaults should include an explicit ref when practical so the rendered config is reproducible.
 
-### Private settings overlays
+### Private sync inputs
 
-`pnpm pi:sync` optionally reads `config/pi/private/settings.overlay.json` and deep-merges it into the rendered `settings.json`. This is repo policy rather than Pi behavior; Pi only sees the final generated JSON file. Keep secret or machine-local values in that ignored overlay instead of in `config/pi/agent/settings.template.json`.
+`pnpm pi:sync` optionally reads `config/pi/private/settings.overlay.json` and deep-merges it into the rendered `settings.json`. It can also read `config/pi/private/agent-context.json` to render guarded optional blocks in `AGENTS.md`, such as replacing `<VAULT>` with a local knowledge-vault path. This is repo policy rather than Pi behavior; Pi only sees the final generated files. Keep secret or machine-local values in ignored private files instead of in `config/pi/agent/` templates.
 
 ### RTK (Rust Token Killer) CLI
 
