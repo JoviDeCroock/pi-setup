@@ -23,6 +23,8 @@ The repo is optimized for maintainability and verification, not for a single dem
 - Optional RTK (Rust Token Killer) CLI support to prune command-output tokens before they reach the agent
 - Personal Pi config templates, prompts, and skills under `config/pi/agent/`
   - optional `<VAULT>` rendering from ignored `config/pi/private/agent-context.json` for personal knowledge-capture guidance
+  - `agent-browser` for browser, web app, Electron, and Slack automation via the `agent-browser` CLI
+  - `agent-device` for mobile, TV, and desktop device automation via the `agent-device` CLI, with companion `dogfood` and `react-devtools` skills
   - `extension-maintainer` for this repository's extension workflow
   - `session-lessons` for inspecting Pi session history and turning repeated assistant mistakes into corrective skills or context updates
 - Example project-scoped `.pi/settings.json` wiring under `examples/local-project/`

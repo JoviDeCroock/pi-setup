@@ -45,6 +45,9 @@ When `vault` exists, `pnpm pi:sync` includes the optional AGENTS instruction and
 
 Managed skills currently include:
 
+- `agent-browser` for browser, web app, Electron, Slack, Vercel Sandbox, and AgentCore automation via the `agent-browser` CLI. This skill is the upstream built-in discovery stub from `agent-browser@0.26.0`; load `agent-browser skills get core` for version-matched workflow details.
+- `agent-device` for Apple-platform, Android, TV, and desktop UI automation via the `agent-device` CLI. This skill is sourced from the upstream built-in `agent-device@0.13.3` skill and includes its local reference files.
+  - `dogfood` and `react-devtools` are also copied from `agent-device@0.13.3` because `agent-device` references them for QA and React Native internals.
 - `extension-maintainer` for maintaining this repository's Pi extensions with tests, docs, and verification.
 - `session-lessons` for reviewing Pi session history, diagnosing repeated assistant mistakes, and drafting corrective skills or context updates.
 
