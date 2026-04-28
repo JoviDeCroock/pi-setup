@@ -9,6 +9,7 @@ import {
 import { buildRepoContext, formatRepoContext } from "./context.js";
 
 export interface RepoContextToolInput {
+  includeExtensions?: string[];
   maxBytesPerFile?: number;
   maxFiles?: number;
   query: string;
@@ -17,9 +18,15 @@ export interface RepoContextToolInput {
 const repoContextExtension = definePiExtension((pi) => {
   pi.registerTool({
     description:
-      "Return a focused map of the current repository, including package metadata and excerpts from the files most relevant to a query.",
+      "Return a focused map of the current repository, including package metadata and line-numbered excerpts from the files most relevant to a query.",
     name: "repo_context_snapshot",
     parameters: Type.Object({
+      includeExtensions: Type.Optional(
+        Type.Array(Type.String(), {
+          description:
+            "Additional file extensions to treat as text, with or without a leading dot.",
+        }),
+      ),
       maxBytesPerFile: Type.Optional(
         Type.Integer({
           description: "Maximum bytes to read from each candidate file.",
@@ -45,6 +52,7 @@ const repoContextExtension = definePiExtension((pi) => {
       try {
         const report = await buildRepoContext({
           cwd,
+          ...(params.includeExtensions ? { includeExtensions: params.includeExtensions } : {}),
           maxBytesPerFile: params.maxBytesPerFile ?? 4_000,
           maxFiles: params.maxFiles ?? 8,
           query: params.query,

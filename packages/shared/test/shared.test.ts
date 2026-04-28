@@ -6,8 +6,10 @@ import test from "node:test";
 
 import {
   excerptMatchingLines,
+  excerptMatchingLinesWithLineNumbers,
   findWorkspaceRoot,
   parseJsonLines,
+  scoreTextAgainstQuery,
   tokenizeQuery,
 } from "../src/index.js";
 
@@ -26,6 +28,20 @@ test("tokenizeQuery keeps stable lowercase tokens", () => {
 test("excerptMatchingLines favors matching lines", () => {
   const excerpt = excerptMatchingLines("alpha\nbravo\ncharlie delta\necho", ["delta"], 2);
   assert.match(excerpt, /charlie delta/);
+});
+
+test("excerptMatchingLinesWithLineNumbers includes original line numbers", () => {
+  const excerpt = excerptMatchingLinesWithLineNumbers(
+    "alpha\nbravo\ncharlie delta\necho",
+    ["delta"],
+    3,
+  );
+  assert.match(excerpt, /2 \| bravo/);
+  assert.match(excerpt, /3 \| charlie delta/);
+});
+
+test("scoreTextAgainstQuery matches separator variants", () => {
+  assert.ok(scoreTextAgainstQuery("repo context snapshot", ["repo-context"]) > 0);
 });
 
 test("findWorkspaceRoot walks upward to a marker", async () => {

@@ -1,12 +1,13 @@
-import { basename } from "node:path";
+import { basename, extname, join } from "node:path";
 
 import {
   discoverWorkspacePackages,
-  excerptMatchingLines,
+  excerptMatchingLinesWithLineNumbers,
   findWorkspaceRoot,
   formatMarkdownList,
   listFiles,
   readUtf8,
+  runCommand,
   scoreTextAgainstQuery,
   toPortablePath,
   tokenizeQuery,
@@ -21,6 +22,7 @@ export interface ContextFile {
 }
 
 export interface RepoContextReport {
+  fileSource: "filesystem" | "git";
   packages: Array<{
     description?: string;
     name: string;
@@ -28,47 +30,100 @@ export interface RepoContextReport {
   }>;
   query: string;
   rootPath: string;
+  scannedFileCount: number;
   selectedFiles: ContextFile[];
 }
 
 export interface RepoContextOptions {
   cwd: string;
+  includeExtensions?: string[];
   maxBytesPerFile: number;
   maxFiles: number;
   query: string;
 }
 
-const TEXT_FILE_PATTERN = /\.(c|m)?[jt]sx?$|\.json$|\.md$|\.ya?ml$|\.txt$/i;
-const PRIORITY_FILENAMES = new Set([
-  "AGENTS.md",
-  "README.md",
-  "package.json",
+const DEFAULT_TEXT_EXTENSIONS = new Set([
+  "bash",
+  "c",
+  "cc",
+  "cjs",
+  "cpp",
+  "cs",
+  "css",
+  "cts",
+  "cxx",
+  "fish",
+  "go",
+  "h",
+  "hpp",
+  "html",
+  "ini",
+  "java",
+  "js",
+  "json",
+  "jsx",
+  "kt",
+  "kts",
+  "lua",
+  "m",
+  "md",
+  "mdx",
+  "mjs",
+  "mts",
+  "php",
+  "proto",
+  "py",
+  "rb",
+  "rs",
+  "scss",
+  "sh",
+  "sql",
+  "swift",
+  "toml",
+  "ts",
+  "tsx",
+  "txt",
+  "xml",
+  "yaml",
+  "yml",
+  "zsh",
+]);
+const TEXT_FILENAMES = new Set([
+  ".env",
+  ".gitignore",
+  ".npmrc",
+  "Dockerfile",
+  "Makefile",
+  "Procfile",
+  "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
 ]);
+const PRIORITY_FILENAMES = new Set(["README.md", "package.json", "pnpm-workspace.yaml"]);
+const MAX_CANDIDATE_FILES = 5_000;
 
 export async function buildRepoContext(options: RepoContextOptions): Promise<RepoContextReport> {
   const rootPath = await findWorkspaceRoot(options.cwd);
   const query = options.query.trim() || "workspace overview";
   const tokens = tokenizeQuery(query);
   const packages = await discoverWorkspacePackages(rootPath);
-  const files = await listFiles(rootPath, {
-    include: (filePath) => TEXT_FILE_PATTERN.test(filePath),
-  });
+  const isTextFile = createTextFileMatcher(options.includeExtensions ?? []);
+  const listing = await listRepoFiles(rootPath, isTextFile);
+  const files = listing.files.slice(0, MAX_CANDIDATE_FILES);
 
   const candidates: ContextFile[] = [];
 
   for (const absolutePath of files) {
     const relativePath = toPortablePath(absolutePath, rootPath);
     const priorityScore = PRIORITY_FILENAMES.has(basename(relativePath)) ? 3 : 0;
-    const pathScore = scoreTextAgainstQuery(relativePath, tokens) * 4;
+    const pathScore = scoreTextAgainstQuery(relativePath, tokens) * 6;
 
     let contentScore = 0;
     let excerpt = "";
 
     try {
       const content = truncate(await readUtf8(absolutePath), options.maxBytesPerFile);
-      contentScore = scoreTextAgainstQuery(content, tokens);
-      excerpt = excerptMatchingLines(content, tokens, 14);
+      contentScore = Math.min(scoreTextAgainstQuery(content, tokens), 40);
+      excerpt = excerptMatchingLinesWithLineNumbers(content, tokens, 14);
     } catch {
       continue;
     }
@@ -98,9 +153,11 @@ export async function buildRepoContext(options: RepoContextOptions): Promise<Rep
   candidates.sort((left, right) => right.score - left.score || left.path.localeCompare(right.path));
 
   return {
+    fileSource: listing.source,
     packages,
     query,
     rootPath,
+    scannedFileCount: files.length,
     selectedFiles: candidates.slice(0, Math.max(1, options.maxFiles)),
   };
 }
@@ -111,6 +168,7 @@ export function formatRepoContext(report: RepoContextReport): string {
     "",
     `Workspace root: \`${report.rootPath}\``,
     `Query: ${report.query}`,
+    `Files considered: ${report.scannedFileCount} (${describeFileSource(report.fileSource)})`,
     "",
   ];
 
@@ -144,6 +202,71 @@ export function formatRepoContext(report: RepoContextReport): string {
   }
 
   return lines.join("\n").trimEnd();
+}
+
+function createTextFileMatcher(extraExtensions: string[]): (filePath: string) => boolean {
+  const extensions = new Set(DEFAULT_TEXT_EXTENSIONS);
+  for (const extension of extraExtensions) {
+    const normalized = normalizeExtension(extension);
+    if (normalized) {
+      extensions.add(normalized);
+    }
+  }
+
+  return (filePath: string) => {
+    const fileName = basename(filePath);
+    if (TEXT_FILENAMES.has(fileName) || fileName.startsWith(".env.")) {
+      return true;
+    }
+
+    const extension = normalizeExtension(extname(fileName));
+    return extension.length > 0 && extensions.has(extension);
+  };
+}
+
+async function listRepoFiles(
+  rootPath: string,
+  include: (filePath: string) => boolean,
+): Promise<{ files: string[]; source: "filesystem" | "git" }> {
+  const gitListing = await runCommand(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard"],
+    {
+      allowFailure: true,
+      cwd: rootPath,
+      timeoutMs: 3_000,
+    },
+  );
+
+  if (gitListing.exitCode === 0) {
+    return {
+      files: uniqueSorted(
+        gitListing.stdout
+          .split(/\r?\n/)
+          .filter((relativePath) => relativePath.length > 0)
+          .map((relativePath) => join(rootPath, relativePath))
+          .filter(include),
+      ),
+      source: "git",
+    };
+  }
+
+  return {
+    files: await listFiles(rootPath, { include }),
+    source: "filesystem",
+  };
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
+}
+
+function normalizeExtension(extension: string): string {
+  return extension.trim().toLowerCase().replace(/^\./, "");
+}
+
+function describeFileSource(source: "filesystem" | "git"): string {
+  return source === "git" ? "git ls-files, respecting .gitignore" : "filesystem walk fallback";
 }
 
 function describeReason(scores: {

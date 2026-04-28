@@ -92,7 +92,7 @@ scripts/                   Repo automation for sync and diagnostics
 
 ### `repo-context`
 
-Registers `repo_context_snapshot`, a tool that scores files and packages against a query, then returns a focused repository map with excerpts from the most relevant files.
+Registers `repo_context_snapshot`, a tool that scores files and packages against a query, then returns a focused repository map with line-numbered excerpts from the most relevant files. It prefers `git ls-files --cached --others --exclude-standard` so snapshots respect `.gitignore`, falls back to a bounded filesystem walk outside Git repositories, and accepts `includeExtensions` for project-specific text file types.
 
 ### `usage-insights`
 

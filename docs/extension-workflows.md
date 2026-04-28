@@ -45,7 +45,7 @@ Use `review_gate_check` when you want a disciplined summary of current changes b
 
 ### Repo Context
 
-Use `repo_context_snapshot` to gather a focused package/file map for an extension, feature, or bug.
+Use `repo_context_snapshot` to gather a focused package/file map for an extension, feature, or bug. Results include line-numbered excerpts. File discovery is Git-aware when possible (`git ls-files --cached --others --exclude-standard`) so ignored/generated files stay out of the snapshot, with a bounded filesystem fallback for non-Git workspaces. Pass `includeExtensions` when a project uses additional text-like file suffixes.
 
 ### Usage Insights
 
