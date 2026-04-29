@@ -14,14 +14,14 @@ The repo is optimized for maintainability and verification, not for a single dem
   - `repo-context` for repository mapping and targeted context snapshots
   - `usage-insights` for session telemetry and lightweight reporting
   - `rtk-rewrite` for optional RTK-backed Bash command rewrites
-  - `minimal-output` for compacting noisy `tsc` and lint Bash diagnostics before they enter model context
+  - `minimal-output` for compacting noisy `tsc`, lint, test, build, and package-manager Bash output before it enters model context
   - `tool-pruner` for keeping only the most useful third-party callable tools in the prompt by default
 - Four curated third-party extensions in the generated global Pi config:
   - `pi-powerline-footer`
   - `@tmustier/pi-usage-extension`
   - `pi-subagents` for async subagent delegation
   - `pi-web-access` for web search and content extraction
-- Built-in Bash diagnostic minimization, plus optional RTK (Rust Token Killer) CLI support for broader command-output token pruning
+- Built-in Bash output minimization for common diagnostics, tests, builds, and package-manager logs, plus optional RTK (Rust Token Killer) CLI support for broader command-output token pruning
 - Personal Pi config templates, prompts, and skills under `config/pi/agent/`
   - optional `<VAULT>` rendering from ignored `config/pi/private/agent-context.json` for personal knowledge-capture guidance
   - `agent-browser` for browser, web app, Electron, and Slack automation via the `agent-browser` CLI
@@ -105,7 +105,7 @@ Subscribes to Pi's `tool_call` event for the built-in Bash tool. When the standa
 
 ### `minimal-output`
 
-Subscribes to Pi's `tool_result` event for the built-in Bash tool and replaces recognized noisy diagnostics with compact summaries before they enter model context. It recognizes TypeScript compiler output from `tsc`, `vue-tsc`, and common `typecheck` scripts, plus lint output from `eslint`, `oxlint`, `biome lint`, and common `lint` scripts. Unrecognized commands and output it cannot parse pass through unchanged.
+Subscribes to Pi's Bash tool events and replaces recognized noisy output with compact summaries before it enters model context. It recognizes TypeScript compiler output (`tsc`, `vue-tsc`, `typecheck`), lint output (`eslint`, `oxlint`, `biome lint`, `lint`), common test runners (`vitest`, `jest`, `node --test`, `pytest`, etc.), build tools (`vite build`, `next build`, `webpack`, `rollup`, `tsup`, etc.), and package-manager commands (`pnpm install`, `npm install`, `yarn add`, etc.). For direct `vitest run` / `jest` commands, and `pnpm test` / `npm test` scripts that directly run Vitest or Jest, it first rewrites the Bash command to use structured JSON reporter output plus a tiny summary CLI, avoiding brittle parsing of human test output when possible. Unrecognized commands and output it cannot parse pass through unchanged.
 
 Example minimized output:
 

@@ -66,7 +66,9 @@ This shape is based on the third-party extension READMEs, especially the documen
 
 ### Bash result minimization
 
-Pi documents that `tool_result` handlers can return partial patches to `content`, `details`, or `isError`. The repo's `minimal-output` extension uses only that documented patch surface: it listens for Bash `tool_result` events, parses recognized diagnostics (`tsc`, `eslint`, `oxlint`, `biome lint`, and package-manager `lint` / `typecheck` scripts), and replaces only the LLM-visible text content with a compact summary. Original Bash metadata such as `fullOutputPath` is preserved in `details` when present.
+Pi documents that `tool_result` handlers can return partial patches to `content`, `details`, or `isError`. The repo's `minimal-output` extension uses that patch surface for Bash `tool_result` events: it parses recognized output from TypeScript, lint, test, build, and package-manager commands, and replaces only the LLM-visible text content with a compact summary when that is smaller. Original Bash metadata such as `fullOutputPath` is preserved in `details` when present.
+
+`minimal-output` also uses Pi's documented Bash `tool_call` event mutation surface, the same surface used by `rtk-rewrite`, for direct `vitest run` / `jest` commands and package test scripts such as `pnpm test` or `npm test` when the nearest `package.json` script directly runs Vitest or Jest. It appends structured JSON reporter flags and a repo-built summary CLI so test failures are summarized from machine-readable reports rather than from fragile human-formatted output. Commands with existing reporter/output-file flags, interactive watch modes, complex shell control operators, or scripts hidden behind another runner such as `turbo run test` are left unchanged.
 
 ### RTK (Rust Token Killer) CLI
 

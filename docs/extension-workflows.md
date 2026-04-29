@@ -57,7 +57,7 @@ Use `usage_insights_report` to summarize active-session usage or inspect a saved
 
 ### Minimal Output
 
-`minimal-output` listens for Bash tool results and rewrites noisy diagnostic output into compact summaries before it reaches model context. It currently recognizes TypeScript compiler output (`tsc`, `vue-tsc`, `typecheck`) and common lint output (`eslint`, `oxlint`, `biome lint`, `lint`). Unrecognized commands and unparseable output pass through unchanged.
+`minimal-output` listens for Bash tool results and rewrites noisy output into compact summaries before it reaches model context. It currently recognizes TypeScript compiler output (`tsc`, `vue-tsc`, `typecheck`), common lint output (`eslint`, `oxlint`, `biome lint`, `lint`), test runners, build tools, and package-manager installs/updates. For direct `vitest run` / `jest` invocations, plus `pnpm test` / `npm test` scripts that directly run Vitest or Jest, it also rewrites the Bash tool call to use structured JSON reporter output plus a compact summary CLI, then leaves commands with existing reporter flags, watch mode, complex shell syntax, or scripts hidden behind another runner untouched. Unrecognized commands, unparseable output, and summaries that would not be smaller pass through unchanged.
 
 ### Tool Pruner
 
