@@ -27,14 +27,44 @@ export interface RtkRewriteOptions {
   timeoutMs?: number;
 }
 
-export interface StructuredTestReporterDeferralOptions {
+export interface MinimalOutputDeferralOptions {
   cwd?: string | undefined;
   packageScripts?: Record<string, string> | undefined;
 }
 
+export type StructuredTestReporterDeferralOptions = MinimalOutputDeferralOptions;
+
 const REWRITE_EXIT_CODES = new Set([0, 3]);
 const DEFAULT_TIMEOUT_MS = 1_000;
 const SIMPLE_COMMAND_UNSAFE_PATTERN = /[\n;&|<>`]/u;
+
+export function shouldDeferToMinimalOutput(
+  command: string,
+  options: MinimalOutputDeferralOptions = {},
+): boolean {
+  const trimmed = command.trim();
+  if (trimmed.length === 0 || SIMPLE_COMMAND_UNSAFE_PATTERN.test(trimmed)) {
+    return false;
+  }
+
+  if (isMinimalOutputHandledCommand(trimmed)) {
+    return true;
+  }
+
+  const packageScript = parsePackageScriptCommand(trimmed);
+  if (!packageScript || !isMinimalOutputPackageScriptName(packageScript.scriptName)) {
+    return false;
+  }
+
+  const scripts = options.packageScripts ?? loadNearestPackageScripts(options.cwd ?? process.cwd());
+  const script = scripts?.[packageScript.scriptName];
+
+  if (script && SIMPLE_COMMAND_UNSAFE_PATTERN.test(script)) {
+    return false;
+  }
+
+  return !script || isMinimalOutputHandledCommand(script);
+}
 
 export function shouldDeferToStructuredTestReporter(
   command: string,
@@ -50,7 +80,7 @@ export function shouldDeferToStructuredTestReporter(
     return canUseStructuredReporter(trimmed, directRunner);
   }
 
-  const packageScript = parsePackageTestScriptCommand(trimmed);
+  const packageScript = parsePackageScriptCommand(trimmed);
   if (!packageScript) {
     return false;
   }
@@ -172,15 +202,41 @@ function canUseStructuredReporter(command: string, runner: "jest" | "vitest"): b
   return !/--json\b/u.test(command);
 }
 
-function parsePackageTestScriptCommand(command: string): { scriptName: string } | undefined {
+function isMinimalOutputHandledCommand(command: string): boolean {
+  return (
+    /(?:^|[;&|()\s])(?:(?:pnpm|npm|yarn|bun|npx)\s+(?:(?:run|exec|dlx|x)\s+)?)?(?:vue-)?tsc\b/iu.test(
+      command,
+    ) ||
+    /(?:^|[;&|()\s])(?:(?:pnpm|npm|yarn|bun|npx)\s+(?:(?:run|exec|dlx|x)\s+)?)?(?:eslint|oxlint|biome\s+lint)\b/iu.test(
+      command,
+    ) ||
+    /(?:^|[;&|()\s])(?:(?:pnpm|npm|yarn|bun|npx)\s+(?:(?:run|exec|dlx|x)\s+)?)?(?:vitest|jest|mocha|uvu|ava|pytest|go\s+test|cargo\s+test|playwright\s+test|cypress\s+run|node\s+--test)\b/iu.test(
+      command,
+    ) ||
+    /(?:^|[;&|()\s])(?:(?:pnpm|npm|yarn|bun|npx)\s+(?:(?:run|exec|dlx|x)\s+)?)?(?:vite\s+build|next\s+build|webpack|rollup|tsup|esbuild|turbo\s+run\s+build|nx\s+(?:run\s+[^\s]+:)?build|go\s+build|cargo\s+build)\b/iu.test(
+      command,
+    ) ||
+    /(?:^|[;&|()\s])(?:pnpm|npm|yarn|bun)\s+(?:install|i|add|remove|rm|uninstall|update|up|ci|dedupe|prune|rebuild)\b/iu.test(
+      command,
+    )
+  );
+}
+
+function isMinimalOutputPackageScriptName(scriptName: string): boolean {
+  return /^(?:t|test(?::[\w.-]+)?|lint(?::[\w.-]+)?|type-?check|check-types|build|compile|bundle)$/iu.test(
+    scriptName,
+  );
+}
+
+function parsePackageScriptCommand(command: string): { scriptName: string } | undefined {
   const match = command.match(
-    /^(?:pnpm|npm|yarn|bun)\s+(?:(?:run|run-script)\s+)?(?:t|test(?::[\w.-]+)?)(?:\s*)$/iu,
+    /^(?:pnpm|npm|yarn|bun)\s+(?:(?:run|run-script)\s+)?([\w:.-]+)(?:\s*)$/iu,
   );
   if (!match) {
     return undefined;
   }
 
-  const scriptName = command.trim().split(/\s+/u).at(-1);
+  const scriptName = match[1];
   if (!scriptName) {
     return undefined;
   }

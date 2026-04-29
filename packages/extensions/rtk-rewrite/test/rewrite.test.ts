@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   interpretRtkRewriteResult,
   rewriteCommandWithRtk,
+  shouldDeferToMinimalOutput,
   shouldDeferToStructuredTestReporter,
   type RtkCommandRunner,
 } from "../src/index.js";
@@ -70,6 +71,22 @@ test("structured test reporter deferral recognizes direct and package-script Vit
   );
   assert.equal(shouldDeferToStructuredTestReporter("vitest --watch"), false);
   assert.equal(shouldDeferToStructuredTestReporter("vitest run --reporter=verbose"), false);
+});
+
+test("minimal-output deferral recognizes diagnostic package scripts", () => {
+  assert.equal(shouldDeferToMinimalOutput("pnpm lint"), true);
+  assert.equal(shouldDeferToMinimalOutput("pnpm typecheck"), true);
+  assert.equal(
+    shouldDeferToMinimalOutput("pnpm test", { packageScripts: { test: "vitest run" } }),
+    true,
+  );
+  assert.equal(
+    shouldDeferToMinimalOutput("pnpm test", { packageScripts: { test: "turbo run test" } }),
+    false,
+  );
+  assert.equal(shouldDeferToMinimalOutput("tsc --noEmit"), true);
+  assert.equal(shouldDeferToMinimalOutput("grep -R foo ."), false);
+  assert.equal(shouldDeferToMinimalOutput("git status --short"), false);
 });
 
 test("rewriteCommandWithRtk shells out with the original command as one argument", async () => {

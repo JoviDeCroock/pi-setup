@@ -16,6 +16,7 @@ test("rewrites vitest run commands to use a structured reporter", () => {
   assert.equal(decision.status, "rewritten");
   assert.equal(decision.runner, "vitest");
   assert.match(decision.command, /--reporter=json/u);
+  assert.match(decision.command, /--silent=passed-only/u);
   assert.match(decision.command, /--outputFile="\$__pi_minimal_output_report"/u);
   assert.match(
     decision.command,
@@ -34,6 +35,7 @@ test("rewrites package test scripts when they run Vitest directly", () => {
   assert.equal(decision.status, "rewritten");
   assert.equal(decision.runner, "vitest");
   assert.match(decision.command, /pnpm test -- --reporter=json/u);
+  assert.match(decision.command, /--silent=passed-only/u);
   assert.match(decision.command, /--outputFile="\$__pi_minimal_output_report"/u);
 });
 
@@ -68,6 +70,16 @@ test("rewrites jest commands to use JSON output", () => {
   assert.equal(decision.runner, "jest");
   assert.match(decision.command, /--json/u);
   assert.match(decision.command, /--outputFile="\$__pi_minimal_output_report"/u);
+});
+
+test("preserves explicit Vitest silent options", () => {
+  const decision = rewriteTestCommandWithStructuredReporter("vitest run --silent=false", {
+    summaryCliPath,
+  });
+
+  assert.equal(decision.status, "rewritten");
+  assert.doesNotMatch(decision.command, /--silent=passed-only/u);
+  assert.match(decision.command, /--silent=false/u);
 });
 
 test("leaves explicit reporters, watch commands, and complex shell unchanged", () => {

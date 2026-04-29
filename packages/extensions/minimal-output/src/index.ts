@@ -1,24 +1,42 @@
 import { fileURLToPath } from "node:url";
 
 import {
+  appendSessionEntry,
   definePiExtension,
+  getSessionEntries,
   isBashToolCallEvent,
   isBashToolResultEvent,
+  safeNotify,
   type PiMessageContent,
   type PiToolResultPatch,
 } from "@pi-setup/pi-kit";
 
 import { minimizeBashOutput, type MinimizeBashOutputOptions } from "./minimize.js";
 import { rewriteTestCommandWithStructuredReporter } from "./reporter-command.js";
+import {
+  MINIMAL_OUTPUT_SAVINGS_ENTRY_TYPE,
+  createSavingsPoint,
+  formatSavingsSummary,
+  savingsPointsFromEntries,
+  summarizeSavings,
+  type MinimalOutputSavingsPoint,
+} from "./savings.js";
 
 export interface MinimalOutputExtensionOptions extends MinimizeBashOutputOptions {
   enabled?: boolean;
+  logSavings?: boolean;
   structuredTestReporter?: boolean;
   testReportSummaryCliPath?: string;
 }
 
 export function createMinimalOutputExtension(options: MinimalOutputExtensionOptions = {}) {
   return definePiExtension((pi) => {
+    const liveSavings: MinimalOutputSavingsPoint[] = [];
+
+    pi.on("session_start", () => {
+      liveSavings.length = 0;
+    });
+
     pi.on("tool_call", (event, ctx) => {
       if (
         options.enabled === false ||
@@ -54,6 +72,12 @@ export function createMinimalOutputExtension(options: MinimalOutputExtensionOpti
         return undefined;
       }
 
+      const savingsPoint = createSavingsPoint(event.input.command, decision);
+      if (options.logSavings !== false) {
+        liveSavings.push(savingsPoint);
+        appendSessionEntry(pi, MINIMAL_OUTPUT_SAVINGS_ENTRY_TYPE, savingsPoint);
+      }
+
       return {
         content: [{ type: "text", text: decision.text }],
         details: {
@@ -61,14 +85,50 @@ export function createMinimalOutputExtension(options: MinimalOutputExtensionOpti
           minimalOutput: {
             diagnostics: decision.diagnostics.length,
             omittedDiagnostics: decision.omittedDiagnostics,
+            minimizedLength: savingsPoint.minimizedLength,
+            minimizedLineCount: savingsPoint.minimizedLineCount,
             originalLength: decision.originalLength,
             originalLineCount: decision.originalLineCount,
             profile: decision.profile,
+            savedLength: savingsPoint.savedLength,
+            savedLineCount: savingsPoint.savedLineCount,
           },
         },
       };
     });
+
+    pi.registerCommand?.("minimal-output-savings", {
+      description:
+        "Report how much Bash output the minimal-output extension has removed from this session.",
+      handler: (args, ctx) => {
+        const limit = parseSavingsLimit(args);
+        let points = savingsPointsFromEntries(getSessionEntries(ctx));
+        if (points.length === 0) {
+          points = [...liveSavings];
+        }
+        if (limit) {
+          points = points.slice(-limit);
+        }
+
+        safeNotify(ctx, formatSavingsSummary(summarizeSavings(points)));
+      },
+    });
   });
+}
+
+function parseSavingsLimit(args: string): number | undefined {
+  const trimmed = args.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  const match = trimmed.match(/^(?:--limit\s+|--limit=)?(\d+)$/u);
+  if (!match) {
+    return undefined;
+  }
+
+  const value = Number(match[1]);
+  return Number.isInteger(value) && value > 0 ? Math.min(value, 500) : undefined;
 }
 
 function textFromContent(content: PiMessageContent[]): string | undefined {
@@ -91,6 +151,7 @@ const minimalOutputExtension = createMinimalOutputExtension();
 
 export * from "./minimize.js";
 export * from "./reporter-command.js";
+export * from "./savings.js";
 export * from "./structured-test-report.js";
 
 export default minimalOutputExtension;

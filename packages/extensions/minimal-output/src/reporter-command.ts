@@ -89,7 +89,7 @@ function resolveDirectRunnerCommand(
   }
 
   return {
-    command: `${command} ${reporterArgsFor(runner)}`,
+    command: `${command} ${reporterArgsFor(runner, command)}`,
     reporterArgs: "",
     runner,
     status: "resolved",
@@ -121,7 +121,7 @@ function resolvePackageScriptCommand(
 
   return {
     command,
-    reporterArgs: `-- ${reporterArgsFor(runner)}`,
+    reporterArgs: `-- ${reporterArgsFor(runner, command, script)}`,
     runner,
     status: "resolved",
   };
@@ -248,12 +248,24 @@ function isVitestRunMode(command: string): boolean {
   return /(?:^|\s)(?:run\b|--run\b)/iu.test(command);
 }
 
-function reporterArgsFor(runner: StructuredTestReporterKind): string {
+function reporterArgsFor(
+  runner: StructuredTestReporterKind,
+  command: string,
+  packageScript?: string,
+): string {
   if (runner === "vitest") {
-    return `--reporter=json --outputFile="$${TEST_REPORT_VARIABLE}"`;
+    const silentArg =
+      hasVitestSilentFlag(command) || hasVitestSilentFlag(packageScript)
+        ? ""
+        : " --silent=passed-only";
+    return `--reporter=json${silentArg} --outputFile="$${TEST_REPORT_VARIABLE}"`;
   }
 
   return `--json --outputFile="$${TEST_REPORT_VARIABLE}"`;
+}
+
+function hasVitestSilentFlag(command: string | undefined): boolean {
+  return command ? /--silent(?:=|\s|$)/u.test(command) : false;
 }
 
 function wrapCommandWithStructuredReport(

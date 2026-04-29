@@ -3,7 +3,14 @@ import test from "node:test";
 
 import { createMinimalOutputExtension } from "../src/index.js";
 
-test("minimal output extension patches bash tool results", async () => {
+test("minimal output extension patches bash tool results and records savings", async () => {
+  let commandHandler:
+    | ((
+        args: string,
+        ctx: { cwd: string; hasUI: boolean; ui?: { notify: (message: string) => void } },
+      ) => void)
+    | undefined;
+  const entries: Array<{ customType: string; data: unknown }> = [];
   let handler:
     | ((
         event: unknown,
@@ -13,9 +20,17 @@ test("minimal output extension patches bash tool results", async () => {
 
   const extension = createMinimalOutputExtension();
   extension({
+    appendEntry(customType: string, data: unknown) {
+      entries.push({ customType, data });
+    },
     on(eventName: string, registeredHandler: typeof handler) {
       if (eventName === "tool_result") {
         handler = registeredHandler;
+      }
+    },
+    registerCommand(name: string, definition: { handler?: typeof commandHandler }) {
+      if (name === "minimal-output-savings") {
+        commandHandler = definition.handler;
       }
     },
     registerTool() {},
@@ -45,10 +60,21 @@ test("minimal output extension patches bash tool results", async () => {
   assert.ok(patch?.details);
   const details = patch.details as {
     fullOutputPath?: string;
-    minimalOutput?: { profile?: string };
+    minimalOutput?: { profile?: string; savedLength?: number };
   };
   assert.deepEqual(details.fullOutputPath, "/tmp/full-output.txt");
   assert.equal(details.minimalOutput?.profile, "tsc");
+  assert.ok((details.minimalOutput?.savedLength ?? 0) > 0);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0]?.customType, "minimal-output-savings");
+
+  let report = "";
+  commandHandler?.("", {
+    cwd: process.cwd(),
+    hasUI: true,
+    ui: { notify: (message) => (report = message) },
+  });
+  assert.match(report, /^minimal-output savings: 1 compacted Bash result/mu);
 });
 
 test("minimal output extension rewrites supported test commands to structured reports", () => {

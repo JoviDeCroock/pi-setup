@@ -2,7 +2,7 @@ import { definePiExtension, isBashToolCallEvent, safeNotify } from "@pi-setup/pi
 
 import {
   rewriteCommandWithRtk,
-  shouldDeferToStructuredTestReporter,
+  shouldDeferToMinimalOutput,
   type RtkCommandRunner,
   type RtkRewriteOptions,
 } from "./rewrite.js";
@@ -22,7 +22,7 @@ export function createRtkRewriteExtension(options: RtkRewriteExtensionOptions = 
         return;
       }
 
-      if (shouldDeferToStructuredTestReporter(event.input.command, { cwd: ctx.cwd })) {
+      if (shouldDeferToMinimalOutput(event.input.command, { cwd: ctx.cwd })) {
         return;
       }
 
