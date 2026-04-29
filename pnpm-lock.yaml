@@ -36,6 +36,12 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
+  packages/extensions/minimal-output:
+    devDependencies:
+      '@pi-setup/pi-kit':
+        specifier: workspace:*
+        version: link:../../pi-kit
+
   packages/extensions/repo-context:
     dependencies:
       '@pi-setup/pi-kit':

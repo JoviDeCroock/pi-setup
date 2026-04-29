@@ -10,17 +10,18 @@ The repo is optimized for maintainability and verification, not for a single dem
 ## What you get
 
 - A workspace-managed extension lab with shared utilities and a Pi compatibility layer
-- Four repo-built extensions:
+- Five repo-built extensions:
   - `repo-context` for repository mapping and targeted context snapshots
   - `usage-insights` for session telemetry and lightweight reporting
   - `rtk-rewrite` for optional RTK-backed Bash command rewrites
+  - `minimal-output` for compacting noisy `tsc` and lint Bash diagnostics before they enter model context
   - `tool-pruner` for keeping only the most useful third-party callable tools in the prompt by default
 - Four curated third-party extensions in the generated global Pi config:
   - `pi-powerline-footer`
   - `@tmustier/pi-usage-extension`
   - `pi-subagents` for async subagent delegation
   - `pi-web-access` for web search and content extraction
-- Optional RTK (Rust Token Killer) CLI support to prune command-output tokens before they reach the agent
+- Built-in Bash diagnostic minimization, plus optional RTK (Rust Token Killer) CLI support for broader command-output token pruning
 - Personal Pi config templates, prompts, and skills under `config/pi/agent/`
   - optional `<VAULT>` rendering from ignored `config/pi/private/agent-context.json` for personal knowledge-capture guidance
   - `agent-browser` for browser, web app, Electron, and Slack automation via the `agent-browser` CLI
@@ -101,6 +102,18 @@ Registers `usage_insights_report`, plus a minimal `turn_end` hook that records c
 ### `rtk-rewrite`
 
 Subscribes to Pi's `tool_call` event for the built-in Bash tool. When the standalone `rtk` binary is on `PATH`, it calls `rtk rewrite <command>` and mutates supported Bash commands before execution (for example, `git status` becomes `rtk git status`). If RTK is missing or cannot rewrite a command, the extension passes the original command through unchanged.
+
+### `minimal-output`
+
+Subscribes to Pi's `tool_result` event for the built-in Bash tool and replaces recognized noisy diagnostics with compact summaries before they enter model context. It recognizes TypeScript compiler output from `tsc`, `vue-tsc`, and common `typecheck` scripts, plus lint output from `eslint`, `oxlint`, `biome lint`, and common `lint` scripts. Unrecognized commands and output it cannot parse pass through unchanged.
+
+Example minimized output:
+
+```text
+tsc: 2 errors
+- src/index.ts:12:34 error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+- src/app.ts:4:7 error TS2322: Type 'string' is not assignable to type 'number'.
+```
 
 ### `tool-pruner`
 

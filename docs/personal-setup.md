@@ -66,6 +66,8 @@ The rendered global settings also declare curated package-based defaults. The pi
 - `npm:pi-subagents` — async subagent delegation with chains, parallel execution, and TUI clarification
 - `npm:pi-web-access` — `web_search`, `code_search`, `fetch_content`, and `get_search_content` tools (works zero-config via Exa MCP)
 
+The repo-built `minimal-output` extension also runs by default. It compresses recognized Bash diagnostics from `tsc` / `typecheck` and `eslint` / `oxlint` / `biome lint` / `lint` into short summaries before those results enter model context. Commands and outputs it cannot confidently parse pass through unchanged.
+
 The repo-built `tool-pruner` extension keeps the default callable tool set to `read`, `bash`, `edit`, `write`, `repo_context_snapshot`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Keep the packages installed but opt additional tools back in per session with environment variables, for example:
 
 ```bash

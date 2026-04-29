@@ -1,0 +1,26 @@
+{
+  "name": "@pi-setup/minimal-output",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pi extension that compresses noisy Bash diagnostics such as tsc and lint output.",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "clean": "rimraf dist",
+    "test": "tsx --test"
+  },
+  "devDependencies": {
+    "@pi-setup/pi-kit": "workspace:*"
+  }
+}

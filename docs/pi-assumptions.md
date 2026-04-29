@@ -10,6 +10,7 @@ These are explicitly described in the Pi docs:
 - Extensions can register tools with `registerTool(...)`.
 - Extensions can subscribe to lifecycle events with `pi.on(...)`.
 - `tool_call` handlers can inspect and mutate built-in Bash tool input before execution.
+- `tool_result` handlers can patch Bash tool result content and details before the result is saved into context.
 - `appendEntry(...)` can persist custom session data.
 - `getAllTools(...)` and `setActiveTools(...)` can inspect and control active tools at runtime.
 - Pi reads global and project-scoped settings files.
@@ -62,6 +63,10 @@ This shape is based on the third-party extension READMEs, especially the documen
 ### Private sync inputs
 
 `pnpm pi:sync` optionally reads `config/pi/private/settings.overlay.json` and deep-merges it into the rendered `settings.json`. It can also read `config/pi/private/agent-context.json` to render guarded optional blocks in `AGENTS.md`, such as replacing `<VAULT>` with a local knowledge-vault path. This is repo policy rather than Pi behavior; Pi only sees the final generated files. Keep secret or machine-local values in ignored private files instead of in `config/pi/agent/` templates.
+
+### Bash result minimization
+
+Pi documents that `tool_result` handlers can return partial patches to `content`, `details`, or `isError`. The repo's `minimal-output` extension uses only that documented patch surface: it listens for Bash `tool_result` events, parses recognized diagnostics (`tsc`, `eslint`, `oxlint`, `biome lint`, and package-manager `lint` / `typecheck` scripts), and replaces only the LLM-visible text content with a compact summary. Original Bash metadata such as `fullOutputPath` is preserved in `details` when present.
 
 ### RTK (Rust Token Killer) CLI
 

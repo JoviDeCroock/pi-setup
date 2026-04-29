@@ -7,7 +7,7 @@
     "clean": "turbo run clean && rimraf .turbo coverage",
     "format": "oxfmt --check .",
     "format:write": "oxfmt --write .",
-    "lint": "oxlint .",
+    "lint": "oxlint --threads=1 .",
     "pi:doctor": "tsx scripts/pi-doctor.ts",
     "pi:sync": "tsx scripts/sync-pi-config.ts",
     "test": "turbo run test",

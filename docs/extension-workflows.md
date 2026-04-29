@@ -55,6 +55,10 @@ Use `usage_insights_report` to summarize active-session usage or inspect a saved
 
 `rtk-rewrite` listens for Pi Bash tool calls and, when the standalone `rtk` binary is on `PATH`, rewrites supported commands through `rtk rewrite` before execution. It is intentionally pass-through when RTK is missing or a command has no RTK equivalent.
 
+### Minimal Output
+
+`minimal-output` listens for Bash tool results and rewrites noisy diagnostic output into compact summaries before it reaches model context. It currently recognizes TypeScript compiler output (`tsc`, `vue-tsc`, `typecheck`) and common lint output (`eslint`, `oxlint`, `biome lint`, `lint`). Unrecognized commands and unparseable output pass through unchanged.
+
 ### Tool Pruner
 
 `tool-pruner` uses Pi's active-tool API to keep heavy third-party tool schemas out of the prompt by default. Configure it with `PI_TOOL_PRUNER_ALLOW`, `PI_TOOL_PRUNER_EXTRA_ALLOW`, `PI_TOOL_PRUNER_DENY`, or `PI_TOOL_PRUNER_DISABLED` when a session needs a different callable tool set.

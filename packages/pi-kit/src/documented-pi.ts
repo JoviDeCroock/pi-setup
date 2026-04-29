@@ -52,7 +52,29 @@ export interface PiBashToolCallEventLike {
   toolName: "bash";
 }
 
-export type PiEventHandler = (event: unknown, ctx: PiExtensionContext) => void | Promise<unknown>;
+export interface PiToolResultPatch {
+  content?: PiMessageContent[];
+  details?: unknown;
+  isError?: boolean;
+}
+
+export interface PiToolResultEventLike {
+  content: PiMessageContent[];
+  details?: unknown;
+  input: Record<string, unknown>;
+  isError?: boolean;
+  toolName: string;
+}
+
+export interface PiBashToolResultEventLike extends PiToolResultEventLike {
+  input: PiBashToolCallInput;
+  toolName: "bash";
+}
+
+export type PiEventHandler = (
+  event: unknown,
+  ctx: PiExtensionContext,
+) => void | PiToolResultPatch | Promise<unknown>;
 
 export interface PiToolDefinition {
   description: string;
@@ -149,6 +171,25 @@ export function isBashToolCallEvent(event: unknown): event is PiBashToolCallEven
   }
 
   return (
+    typeof candidate.input === "object" &&
+    candidate.input !== null &&
+    typeof (candidate.input as { command?: unknown }).command === "string"
+  );
+}
+
+export function isBashToolResultEvent(event: unknown): event is PiBashToolResultEventLike {
+  if (typeof event !== "object" || event === null) {
+    return false;
+  }
+
+  const candidate = event as { content?: unknown; input?: unknown; toolName?: unknown };
+
+  if (candidate.toolName !== "bash") {
+    return false;
+  }
+
+  return (
+    Array.isArray(candidate.content) &&
     typeof candidate.input === "object" &&
     candidate.input !== null &&
     typeof (candidate.input as { command?: unknown }).command === "string"
