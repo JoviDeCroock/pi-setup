@@ -9,7 +9,6 @@
   "npmCommand": ["pnpm"],
   "packages": "__PI_SETUP_DEFAULT_PACKAGES__",
   "extensions": [
-    "__PI_SETUP_ROOT__/packages/extensions/repo-context/dist/index.mjs",
     "__PI_SETUP_ROOT__/packages/extensions/usage-insights/dist/index.mjs",
     "__PI_SETUP_ROOT__/packages/extensions/minimal-output/dist/index.mjs",
     "__PI_SETUP_ROOT__/packages/extensions/rtk-rewrite/dist/index.mjs",

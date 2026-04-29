@@ -10,8 +10,7 @@ The repo is optimized for maintainability and verification, not for a single dem
 ## What you get
 
 - A workspace-managed extension lab with shared utilities and a Pi compatibility layer
-- Five repo-built extensions:
-  - `repo-context` for repository mapping and targeted context snapshots
+- Four repo-built extensions:
   - `usage-insights` for session telemetry and lightweight reporting
   - `rtk-rewrite` for optional RTK-backed Bash command rewrites
   - `minimal-output` for compacting noisy `tsc`, lint, test, build, and package-manager Bash output before it enters model context
@@ -91,10 +90,6 @@ scripts/                   Repo automation for sync and diagnostics
 
 ## Starter extensions
 
-### `repo-context`
-
-Registers `repo_context_snapshot`, a tool that scores files and packages against a query, then returns a focused repository map with line-numbered excerpts from the most relevant files. It prefers `git ls-files --cached --others --exclude-standard` so snapshots respect `.gitignore`, falls back to a bounded filesystem walk outside Git repositories, and accepts `includeExtensions` for project-specific text file types.
-
 ### `usage-insights`
 
 Registers `usage_insights_report`, plus a minimal `turn_end` hook that records compact session usage points with `appendEntry()`. Reporting works against the active session when possible and can also read exported JSONL session files.
@@ -117,7 +112,7 @@ tsc: 2 errors
 
 ### `tool-pruner`
 
-Uses Pi's documented active-tool API to keep the callable tool list small before each agent turn. By default it keeps `read`, `bash`, `edit`, `write`, `repo_context_snapshot`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Override with environment variables:
+Uses Pi's documented active-tool API to keep the callable tool list small before each agent turn. By default it keeps `read`, `bash`, `edit`, `write`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Override with environment variables:
 
 - `PI_TOOL_PRUNER_ALLOW="read,bash,edit,write,web_search"` to replace the default allowlist
 - `PI_TOOL_PRUNER_EXTRA_ALLOW="code_search,subagent_status"` to add to the default allowlist

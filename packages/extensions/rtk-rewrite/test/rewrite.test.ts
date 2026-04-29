@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   interpretRtkRewriteResult,
   rewriteCommandWithRtk,
+  shouldDeferToStructuredTestReporter,
   type RtkCommandRunner,
 } from "../src/index.js";
 
@@ -50,6 +51,25 @@ test("interpretRtkRewriteResult detects missing rtk binary", () => {
 
   assert.equal(decision.status, "unavailable");
   assert.equal(decision.command, "git status");
+});
+
+test("structured test reporter deferral recognizes direct and package-script Vitest/Jest", () => {
+  assert.equal(shouldDeferToStructuredTestReporter("vitest run"), true);
+  assert.equal(shouldDeferToStructuredTestReporter("npx jest"), true);
+  assert.equal(
+    shouldDeferToStructuredTestReporter("pnpm test", {
+      packageScripts: { test: "vitest run" },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldDeferToStructuredTestReporter("pnpm test", {
+      packageScripts: { test: "turbo run test" },
+    }),
+    false,
+  );
+  assert.equal(shouldDeferToStructuredTestReporter("vitest --watch"), false);
+  assert.equal(shouldDeferToStructuredTestReporter("vitest run --reporter=verbose"), false);
 });
 
 test("rewriteCommandWithRtk shells out with the original command as one argument", async () => {

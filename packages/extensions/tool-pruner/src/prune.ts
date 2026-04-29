@@ -3,7 +3,6 @@ export const DEFAULT_ALLOWED_TOOL_NAMES = [
   "bash",
   "edit",
   "write",
-  "repo_context_snapshot",
   "usage_insights_report",
   "subagent",
   "subagent_status",

@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+
 import { runCommand, type RunCommandOptions, type RunCommandResult } from "@pi-setup/shared";
 
 export type RtkRewriteStatus = "failed" | "rewritten" | "unchanged" | "unavailable";
@@ -24,8 +27,43 @@ export interface RtkRewriteOptions {
   timeoutMs?: number;
 }
 
+export interface StructuredTestReporterDeferralOptions {
+  cwd?: string | undefined;
+  packageScripts?: Record<string, string> | undefined;
+}
+
 const REWRITE_EXIT_CODES = new Set([0, 3]);
 const DEFAULT_TIMEOUT_MS = 1_000;
+const SIMPLE_COMMAND_UNSAFE_PATTERN = /[\n;&|<>`]/u;
+
+export function shouldDeferToStructuredTestReporter(
+  command: string,
+  options: StructuredTestReporterDeferralOptions = {},
+): boolean {
+  const trimmed = command.trim();
+  if (trimmed.length === 0 || SIMPLE_COMMAND_UNSAFE_PATTERN.test(trimmed)) {
+    return false;
+  }
+
+  const directRunner = detectStructuredReporterRunner(trimmed);
+  if (directRunner) {
+    return canUseStructuredReporter(trimmed, directRunner);
+  }
+
+  const packageScript = parsePackageTestScriptCommand(trimmed);
+  if (!packageScript) {
+    return false;
+  }
+
+  const scripts = options.packageScripts ?? loadNearestPackageScripts(options.cwd ?? process.cwd());
+  const script = scripts?.[packageScript.scriptName];
+  if (!script || SIMPLE_COMMAND_UNSAFE_PATTERN.test(script)) {
+    return false;
+  }
+
+  const scriptRunner = detectStructuredReporterRunner(script);
+  return scriptRunner ? canUseStructuredReporter(script, scriptRunner) : false;
+}
 
 export async function rewriteCommandWithRtk(
   originalCommand: string,
@@ -105,6 +143,99 @@ export function interpretRtkRewriteResult(
     stderr: result.stderr,
     status: "failed",
   };
+}
+
+function detectStructuredReporterRunner(command: string): "jest" | "vitest" | undefined {
+  if (/(?:^|\s)(?:(?:pnpm|npm|yarn|bun|npx)\s+(?:(?:exec|dlx|x)\s+)?)?vitest\b/iu.test(command)) {
+    return "vitest";
+  }
+
+  if (/(?:^|\s)(?:(?:pnpm|npm|yarn|bun|npx)\s+(?:(?:exec|dlx|x)\s+)?)?jest\b/iu.test(command)) {
+    return "jest";
+  }
+
+  return undefined;
+}
+
+function canUseStructuredReporter(command: string, runner: "jest" | "vitest"): boolean {
+  if (
+    /--outputFile(?:=|\s)/u.test(command) ||
+    /(?:^|\s)(?:--watch(?:All)?\b|--ui\b|watch\b)/iu.test(command)
+  ) {
+    return false;
+  }
+
+  if (runner === "vitest") {
+    return /(?:^|\s)(?:run\b|--run\b)/iu.test(command) && !/--reporter(?:=|\s)/u.test(command);
+  }
+
+  return !/--json\b/u.test(command);
+}
+
+function parsePackageTestScriptCommand(command: string): { scriptName: string } | undefined {
+  const match = command.match(
+    /^(?:pnpm|npm|yarn|bun)\s+(?:(?:run|run-script)\s+)?(?:t|test(?::[\w.-]+)?)(?:\s*)$/iu,
+  );
+  if (!match) {
+    return undefined;
+  }
+
+  const scriptName = command.trim().split(/\s+/u).at(-1);
+  if (!scriptName) {
+    return undefined;
+  }
+
+  return { scriptName: scriptName === "t" ? "test" : scriptName };
+}
+
+const packageScriptsCache = new Map<string, Record<string, string> | undefined>();
+
+function loadNearestPackageScripts(cwd: string): Record<string, string> | undefined {
+  const start = path.resolve(cwd);
+  if (packageScriptsCache.has(start)) {
+    return packageScriptsCache.get(start);
+  }
+
+  const scripts = findNearestPackageScripts(start);
+  packageScriptsCache.set(start, scripts);
+  return scripts;
+}
+
+function findNearestPackageScripts(start: string): Record<string, string> | undefined {
+  let current = start;
+  while (true) {
+    const packageJsonPath = path.join(current, "package.json");
+    if (existsSync(packageJsonPath)) {
+      return readPackageScripts(packageJsonPath);
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return undefined;
+    }
+    current = parent;
+  }
+}
+
+function readPackageScripts(packageJsonPath: string): Record<string, string> | undefined {
+  try {
+    const parsed = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { scripts?: unknown };
+    if (
+      typeof parsed.scripts !== "object" ||
+      parsed.scripts === null ||
+      Array.isArray(parsed.scripts)
+    ) {
+      return undefined;
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed.scripts).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    );
+  } catch {
+    return undefined;
+  }
 }
 
 function unchangedDecision(

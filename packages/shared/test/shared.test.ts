@@ -22,7 +22,11 @@ test("parseJsonLines skips blanks and parses values", () => {
 });
 
 test("tokenizeQuery keeps stable lowercase tokens", () => {
-  assert.deepEqual(tokenizeQuery("Repo Context repo-context"), ["repo", "context", "repo-context"]);
+  assert.deepEqual(tokenizeQuery("Alpha Feature alpha-feature"), [
+    "alpha",
+    "feature",
+    "alpha-feature",
+  ]);
 });
 
 test("excerptMatchingLines favors matching lines", () => {
@@ -41,7 +45,7 @@ test("excerptMatchingLinesWithLineNumbers includes original line numbers", () =>
 });
 
 test("scoreTextAgainstQuery matches separator variants", () => {
-  assert.ok(scoreTextAgainstQuery("repo context snapshot", ["repo-context"]) > 0);
+  assert.ok(scoreTextAgainstQuery("alpha feature summary", ["alpha-feature"]) > 0);
 });
 
 test("findWorkspaceRoot walks upward to a marker", async () => {

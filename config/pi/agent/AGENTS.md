@@ -4,7 +4,6 @@
 - State assumptions when uncertain.
 - Run relevant tests or checks when practical.
 - Prefer explicit tools and visible context over invisible automation.
-- Use `repo_context_snapshot` before broad repository scans when the task is exploratory.
 - Keep durable context modular:
   - put always-applicable project guidance in `AGENTS.md`;
   - suggest creating a Pi skill when a task reveals a repeatable workflow, checklist, or specialized procedure.

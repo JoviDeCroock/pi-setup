@@ -1,6 +1,11 @@
 import { definePiExtension, isBashToolCallEvent, safeNotify } from "@pi-setup/pi-kit";
 
-import { rewriteCommandWithRtk, type RtkCommandRunner, type RtkRewriteOptions } from "./rewrite.js";
+import {
+  rewriteCommandWithRtk,
+  shouldDeferToStructuredTestReporter,
+  type RtkCommandRunner,
+  type RtkRewriteOptions,
+} from "./rewrite.js";
 
 export interface RtkRewriteExtensionOptions {
   notifyUnavailable?: boolean;
@@ -14,6 +19,10 @@ export function createRtkRewriteExtension(options: RtkRewriteExtensionOptions = 
 
     pi.on("tool_call", async (event, ctx) => {
       if (rtkUnavailable || !isBashToolCallEvent(event)) {
+        return;
+      }
+
+      if (shouldDeferToStructuredTestReporter(event.input.command, { cwd: ctx.cwd })) {
         return;
       }
 

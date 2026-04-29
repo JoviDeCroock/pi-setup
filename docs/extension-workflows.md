@@ -43,10 +43,6 @@ When you update one:
 
 Use `review_gate_check` when you want a disciplined summary of current changes before merge or handoff. Its default `all` scope checks staged, unstaged, and untracked files; pass `staged`, `working-tree`, or `last-commit` for narrower review slices.
 
-### Repo Context
-
-Use `repo_context_snapshot` to gather a focused package/file map for an extension, feature, or bug. Results include line-numbered excerpts. File discovery is Git-aware when possible (`git ls-files --cached --others --exclude-standard`) so ignored/generated files stay out of the snapshot, with a bounded filesystem fallback for non-Git workspaces. Pass `includeExtensions` when a project uses additional text-like file suffixes.
-
 ### Usage Insights
 
 Use `usage_insights_report` to summarize active-session usage or inspect a saved session JSONL file.

@@ -68,7 +68,7 @@ The rendered global settings also declare curated package-based defaults. The pi
 
 The repo-built `minimal-output` extension also runs by default. It compresses recognized Bash output from `tsc` / `typecheck`, lint commands, test runners, build tools, and package-manager installs/updates into short summaries before those results enter model context. Direct `vitest run` / `jest` commands, and `pnpm test` / `npm test` scripts that directly run Vitest or Jest, are rewritten to structured JSON reporter output plus a compact summary CLI when safe, so failures are surfaced from machine-readable reports instead of brittle terminal formatting. Commands and outputs it cannot confidently parse, or summaries that would not be smaller, pass through unchanged.
 
-The repo-built `tool-pruner` extension keeps the default callable tool set to `read`, `bash`, `edit`, `write`, `repo_context_snapshot`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Keep the packages installed but opt additional tools back in per session with environment variables, for example:
+The repo-built `tool-pruner` extension keeps the default callable tool set to `read`, `bash`, `edit`, `write`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Keep the packages installed but opt additional tools back in per session with environment variables, for example:
 
 ```bash
 PI_TOOL_PRUNER_EXTRA_ALLOW="code_search" pi

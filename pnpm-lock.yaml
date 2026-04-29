@@ -42,15 +42,6 @@ importers:
         specifier: workspace:*
         version: link:../../pi-kit
 
-  packages/extensions/repo-context:
-    dependencies:
-      '@pi-setup/pi-kit':
-        specifier: workspace:*
-        version: link:../../pi-kit
-      '@pi-setup/shared':
-        specifier: workspace:*
-        version: link:../../shared
-
   packages/extensions/rtk-rewrite:
     devDependencies:
       '@pi-setup/pi-kit':
