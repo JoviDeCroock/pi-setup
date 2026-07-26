@@ -51,13 +51,21 @@ Managed skills currently include:
 - `extension-maintainer` for maintaining this repository's Pi extensions with tests, docs, and verification.
 - `session-lessons` for reviewing Pi session history, diagnosing repeated assistant mistakes, and drafting corrective skills or context updates.
 
-The rendered settings also set:
+The rendered settings default the main session and subagents to:
 
 ```json
-"npmCommand": ["pnpm"]
+{
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "subagents": {
+    "defaultModel": "openai-codex/gpt-5.6-terra"
+  }
+}
 ```
 
-That makes Pi run package-manager operations through `pnpm`. The package entries themselves still use `npm:` sources because that is Pi's package-source prefix.
+A subagent's explicit model override still takes precedence over `subagents.defaultModel`.
+
+The settings also set `"npmCommand": ["pnpm"]`. That makes Pi run package-manager operations through `pnpm`. The package entries themselves still use `npm:` sources because that is Pi's package-source prefix.
 
 The rendered global settings also declare curated package-based defaults. The pins live in `config/pi/agent/package-policy.json`, and every npm version there must be at least 7 days old before it is promoted:
 
@@ -75,35 +83,6 @@ PI_TOOL_PRUNER_EXTRA_ALLOW="code_search" pi
 PI_TOOL_PRUNER_ALLOW="read,bash,edit,write,subagent,subagent_status" pi
 PI_TOOL_PRUNER_DISABLED=true pi
 ```
-
-## RTK (Rust Token Killer)
-
-[RTK](https://github.com/rtk-ai/rtk) is a standalone CLI that compresses the output of common shell commands (`ls`, `cat`, `grep`, `git`, test runners, linters, etc.) before the agent sees it. RTK itself does not ship a Pi extension, so this repo provides `rtk-rewrite`, a small Pi extension that uses `rtk rewrite` to transparently rewrite Pi Bash tool calls like `git status` into `rtk git status`.
-
-### Install
-
-```bash
-# macOS / Linux
-brew install rtk
-# or: cargo install --git https://github.com/rtk-ai/rtk
-
-# No RTK hook init is required for Pi; the repo-built rtk-rewrite extension calls `rtk rewrite` directly.
-# Use `rtk init -g` only if you also want RTK's upstream hooks for other agents.
-```
-
-### Windows notes
-
-- The Rust binary runs on Windows (grab `rtk-x86_64-pc-windows-msvc.zip` from [releases](https://github.com/rtk-ai/rtk/releases) and put `rtk.exe` on PATH). The repo-built Pi extension only needs the binary, not RTK's shell hook.
-- From PowerShell / Command Prompt, you can still call `rtk <cmd>` directly (e.g. `rtk git status`, `rtk read file.ts`) even without any hook.
-
-### Verify
-
-```bash
-rtk --version
-pnpm pi:doctor        # reports whether rtk is on PATH
-```
-
-`pnpm pi:doctor` treats RTK as optional: a missing binary is surfaced as a hint, not a failure. If the binary is missing at runtime, `rtk-rewrite` disables rewrites for that session and Bash commands continue unchanged.
 
 ## Health checks
 

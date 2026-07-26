@@ -47,10 +47,6 @@ Use `review_gate_check` when you want a disciplined summary of current changes b
 
 Use `usage_insights_report` to summarize active-session usage or inspect a saved session JSONL file.
 
-### RTK Rewrite
-
-`rtk-rewrite` listens for Pi Bash tool calls and, when the standalone `rtk` binary is on `PATH`, rewrites supported commands through `rtk rewrite` before execution. It is intentionally pass-through when RTK is missing, a command has no RTK equivalent, or a diagnostic/test/build/package-manager command should stay intact for `minimal-output`.
-
 ### Minimal Output
 
 `minimal-output` listens for Bash tool results and rewrites noisy output into compact summaries before it reaches model context. It currently recognizes TypeScript compiler output (`tsc`, `vue-tsc`, `typecheck`), common lint output (`eslint`, `oxlint`, `biome lint`, `lint`), test runners, build tools, and package-manager installs/updates. For direct `vitest run` / `jest` invocations, plus `pnpm test` / `npm test` scripts that directly run Vitest or Jest, it also rewrites the Bash tool call to use structured JSON reporter output plus a compact summary CLI. Vitest rewrites include `--silent=passed-only` when the command does not already specify `--silent`. Savings are appended to the session and can be inspected with `/minimal-output-savings`. Unrecognized commands, unparseable output, and summaries that would not be smaller pass through unchanged.

@@ -15,8 +15,8 @@ test("isBashToolCallEvent narrows mutable bash command inputs", () => {
   assert.equal(isBashToolCallEvent(event), true);
 
   if (isBashToolCallEvent(event)) {
-    event.input.command = "rtk git status";
-    assert.equal(event.input.command, "rtk git status");
+    event.input.command = "git status --short";
+    assert.equal(event.input.command, "git status --short");
   }
 });
 

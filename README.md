@@ -10,9 +10,8 @@ The repo is optimized for maintainability and verification, not for a single dem
 ## What you get
 
 - A workspace-managed extension lab with shared utilities and a Pi compatibility layer
-- Four repo-built extensions:
+- Three repo-built extensions:
   - `usage-insights` for session telemetry and lightweight reporting
-  - `rtk-rewrite` for optional RTK-backed Bash command rewrites
   - `minimal-output` for compacting noisy `tsc`, lint, test, build, and package-manager Bash output before it enters model context
   - `tool-pruner` for keeping only the most useful third-party callable tools in the prompt by default
 - Four curated third-party extensions in the generated global Pi config:
@@ -20,7 +19,7 @@ The repo is optimized for maintainability and verification, not for a single dem
   - `@tmustier/pi-usage-extension`
   - `pi-subagents` for async subagent delegation
   - `pi-web-access` for web search and content extraction
-- Built-in Bash output minimization for common diagnostics, tests, builds, and package-manager logs, plus optional RTK (Rust Token Killer) CLI support for broader command-output token pruning
+- Built-in Bash output minimization for common diagnostics, tests, builds, and package-manager logs
 - Personal Pi config templates, prompts, and skills under `config/pi/agent/`
   - optional `<VAULT>` rendering from ignored `config/pi/private/agent-context.json` for personal knowledge-capture guidance
   - `agent-browser` for browser, web app, Electron, and Slack automation via the `agent-browser` CLI
@@ -38,7 +37,6 @@ The repo is optimized for maintainability and verification, not for a single dem
 - Node.js **20.11+** (`node --version`)
 - [pnpm](https://pnpm.io/installation) **10+** — `corepack enable && corepack prepare pnpm@10 --activate` is the easiest route
 - Git, plus a working Pi install (`pi --version`); see [pi.dev](https://pi.dev/) if you haven't installed Pi yet
-- Optional: [RTK](https://github.com/rtk-ai/rtk) for command-output token pruning (see the RTK section below)
 
 ### Clone and bootstrap
 
@@ -94,10 +92,6 @@ scripts/                   Repo automation for sync and diagnostics
 
 Registers `usage_insights_report`, plus a minimal `turn_end` hook that records compact session usage points with `appendEntry()`. Reporting works against the active session when possible and can also read exported JSONL session files.
 
-### `rtk-rewrite`
-
-Subscribes to Pi's `tool_call` event for the built-in Bash tool. When the standalone `rtk` binary is on `PATH`, it calls `rtk rewrite <command>` and mutates supported Bash commands before execution (for example, `git status` becomes `rtk git status`). It defers diagnostic commands such as lint/typecheck/test/build to `minimal-output` so package scripts keep their project-specific flags. If RTK is missing or cannot rewrite a command, the extension passes the original command through unchanged.
-
 ### `minimal-output`
 
 Subscribes to Pi's Bash tool events and replaces recognized noisy output with compact summaries before it enters model context. It recognizes TypeScript compiler output (`tsc`, `vue-tsc`, `typecheck`), lint output (`eslint`, `oxlint`, `biome lint`, `lint`), common test runners (`vitest`, `jest`, `node --test`, `pytest`, etc.), build tools (`vite build`, `next build`, `webpack`, `rollup`, `tsup`, etc.), and package-manager commands (`pnpm install`, `npm install`, `yarn add`, etc.). For direct `vitest run` / `jest` commands, and `pnpm test` / `npm test` scripts that directly run Vitest or Jest, it first rewrites the Bash command to use structured JSON reporter output plus a tiny summary CLI; Vitest also gets `--silent=passed-only` unless the command already sets `--silent`. Savings are recorded as session entries and visible with `/minimal-output-savings`. Unrecognized commands and output it cannot parse pass through unchanged.
@@ -123,7 +117,7 @@ Uses Pi's documented active-tool API to keep the callable tool list small before
 
 The generated global `settings.json` also includes curated third-party package defaults from `config/pi/agent/package-policy.json`. Every `npm:` source is pinned to an exact version, and the repo only promotes npm releases once they are at least 7 days old.
 
-The synced Pi config also sets `npmCommand` to `["pnpm"]`, so Pi runs package lookups and installs through `pnpm` rather than the default npm client. The package source syntax still stays `npm:...` because that is Pi's package source type, not a lock-in to the npm CLI binary.
+The synced Pi config defaults the main session to `openai-codex/gpt-5.6-sol` and subagents without their own model override to `openai-codex/gpt-5.6-terra`. It also sets `npmCommand` to `["pnpm"]`, so Pi runs package lookups and installs through `pnpm` rather than the default npm client. The package source syntax still stays `npm:...` because that is Pi's package source type, not a lock-in to the npm CLI binary.
 
 - `npm:pi-powerline-footer` for the powerline-style footer and related UI affordances
 - `npm:@tmustier/pi-usage-extension` for the `/usage` dashboard
@@ -131,24 +125,6 @@ The synced Pi config also sets `npmCommand` to `["pnpm"]`, so Pi runs package lo
 - `npm:pi-web-access` for `web_search`, `code_search`, `fetch_content`, and `get_search_content` tools
 
 `tool-pruner` keeps only the commonly useful third-party tools active by default: `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Less frequently needed tools such as `code_search` stay installed but out of the model prompt until you opt them back in with `PI_TOOL_PRUNER_ALLOW` or `PI_TOOL_PRUNER_EXTRA_ALLOW`.
-
-## RTK (token pruning)
-
-[RTK](https://github.com/rtk-ai/rtk) is a standalone Rust CLI proxy that filters and compresses command output (ls, cat, git, tests, lints, etc.) before it reaches the agent. RTK does not ship a Pi extension, so this repo includes `rtk-rewrite`, a small Pi extension that shells out to `rtk rewrite` for Bash tool calls.
-
-Install the RTK binary once, rebuild/sync this repo, then re-run `pnpm pi:doctor` to confirm RTK is on `PATH`:
-
-```bash
-# macOS / Linux
-brew install rtk
-# or: cargo install --git https://github.com/rtk-ai/rtk
-
-pnpm build
-pnpm pi:sync
-pnpm pi:doctor
-```
-
-No `rtk init` step is required for Pi's `rtk-rewrite` extension. Use `rtk init` only if you also want RTK's upstream hooks for other agents. See [docs/personal-setup.md](docs/personal-setup.md) for the full notes.
 
 ## Docs
 

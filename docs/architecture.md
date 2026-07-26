@@ -39,7 +39,6 @@ When Pi behavior changes, this package is the first place to adapt.
 `packages/extensions/*/` contains thin runtime entry points plus testable core logic.
 
 - `usage-insights` records compact usage points and reports over them
-- `rtk-rewrite` rewrites supported Bash tool commands through the optional RTK CLI
 - `minimal-output` compacts noisy Bash output from diagnostics, tests, builds, and package managers, using structured test reports for direct Vitest/Jest runs when safe
 - `tool-pruner` keeps the active callable tool set small before each agent turn
 
