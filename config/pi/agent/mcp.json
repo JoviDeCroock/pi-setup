@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "autoAuth": false,
+    "directTools": false,
+    "hostConfigDiscovery": "off",
+    "scriptMode": false
+  },
+  "mcpServers": {
+    "notion": {
+      "auth": "oauth",
+      "lifecycle": "lazy",
+      "protocolVersion": "auto",
+      "url": "https://mcp.notion.com/mcp"
+    }
+  }
+}

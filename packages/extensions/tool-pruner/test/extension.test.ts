@@ -3,14 +3,17 @@ import test from "node:test";
 
 import { applyToolPruner, createToolPrunerExtension } from "../src/index.js";
 
-test("applyToolPruner sets active tools to the allowed subset", () => {
+test("applyToolPruner prunes the active subset without re-enabling unavailable tools", () => {
   let activeTools: string[] = [];
 
   const result = applyToolPruner(
     {
+      getActiveTools: () => ["read", "bash", "subagent", "web_search"],
       getAllTools: () => [
         { name: "read" },
         { name: "bash" },
+        { name: "edit" },
+        { name: "write" },
         { name: "subagent" },
         { name: "web_search" },
       ],
@@ -28,18 +31,18 @@ test("applyToolPruner sets active tools to the allowed subset", () => {
 });
 
 test("tool pruner defers action methods until runtime events", async () => {
-  let activeTools: string[] = [];
+  let activeTools = ["read", "bash", "subagent"];
   let sessionStart:
     | ((event: unknown, ctx: { cwd: string; hasUI: boolean }) => Promise<void>)
     | undefined;
   let beforeAgentStart:
     | ((event: unknown, ctx: { cwd: string; hasUI: boolean }) => Promise<void>)
     | undefined;
-  const availableTools = [{ name: "read" }, { name: "bash" }, { name: "subagent" }];
 
   const extension = createToolPrunerExtension({ env: { PI_TOOL_PRUNER_ALLOW: "read" } });
   extension({
-    getAllTools: () => availableTools,
+    getActiveTools: () => activeTools,
+    getAllTools: () => activeTools.map((name) => ({ name })),
     on(eventName: string, handler: typeof beforeAgentStart) {
       if (eventName === "session_start") {
         sessionStart = handler;
@@ -54,12 +57,12 @@ test("tool pruner defers action methods until runtime events", async () => {
     },
   });
 
-  assert.deepEqual(activeTools, []);
+  assert.deepEqual(activeTools, ["read", "bash", "subagent"]);
 
   await sessionStart?.({}, { cwd: process.cwd(), hasUI: false });
   assert.deepEqual(activeTools, ["read"]);
 
-  availableTools.push({ name: "web_search" });
+  activeTools.push("web_search");
   await beforeAgentStart?.({}, { cwd: process.cwd(), hasUI: false });
 
   assert.deepEqual(activeTools, ["read"]);
@@ -70,6 +73,7 @@ test("applyToolPruner does not disable everything when no allowed tools match", 
 
   const result = applyToolPruner(
     {
+      getActiveTools: () => ["subagent"],
       getAllTools: () => [{ name: "subagent" }],
       on() {},
       registerTool() {},

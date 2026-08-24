@@ -15,6 +15,9 @@ These are explicitly described in the Pi docs:
 - `getAllTools(...)` and `setActiveTools(...)` can inspect and control active tools at runtime.
 - Pi reads global and project-scoped settings files.
 - Pi reads `AGENTS.md` context files.
+- Pi discovers user subagent definitions through the installed `pi-subagents` package; the agent file format and locations are third-party extension behavior.
+
+Pi does not provide native MCP support. This setup uses the third-party `pi-mcp-adapter` package and its documented `mcp.json`, proxy tool, and OAuth surfaces.
 
 Official docs:
 
@@ -55,8 +58,13 @@ The current curated package names remain:
 - `npm:@tmustier/pi-usage-extension`
 - `npm:pi-subagents`
 - `npm:pi-web-access`
+- `npm:pi-mcp-adapter`
 
-The repo-built `tool-pruner` extension keeps only selected callable tools from those packages active by default; the packages remain installed so other tools can be re-enabled through environment-configured allowlists when needed.
+The repo-built `tool-pruner` extension intersects its allowlist with Pi's existing active-tool boundary, including the MCP adapter's compact `mcp` proxy without re-enabling tools restricted by CLI or subagent configuration. The MCP adapter's `mcpScript` surface is disabled and its bundled scripting skill is filtered out; direct Notion tools are also disabled. Other active package tools can be selected through environment-configured allowlists when needed.
+
+### Tracked MCP declaration
+
+`config/pi/agent/mcp.json` follows `pi-mcp-adapter`'s documented Pi-global override format. It configures Notion's official hosted Streamable HTTP endpoint with OAuth and proxy-only tool discovery. A strict shared validator rejects extra servers, fields, commands, or credential-bearing configuration before doctor or sync can accept the file. OAuth credentials remain in the operating-system credential store; MCP caches and authorization state are machine-local.
 
 This shape is based on the third-party extension READMEs, especially the documented `packages` filtering example in `tmustier/pi-extensions`, rather than on a Pi settings reference page we could verify directly. Keep those defaults explicit and easy to remove if Pi changes package resolution behavior. Git package defaults should include an explicit ref when practical so the rendered config is reproducible.
 

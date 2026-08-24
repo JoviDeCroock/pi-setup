@@ -1,12 +1,12 @@
 {
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
-  "thinking": "high",
+  "defaultThinkingLevel": "high",
   "collapseChangelog": true,
   "theme": "dark",
   "compaction": {
     "enabled": true,
-    "keepRecentTurns": 6
+    "keepRecentTokens": 20000
   },
   "npmCommand": ["pnpm"],
   "subagents": {

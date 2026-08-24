@@ -2,6 +2,7 @@ export interface PiPackageEntry {
   source?: string;
   extensions?: string[];
   publishedAt?: string;
+  skills?: string[];
 }
 
 export interface DefaultPackagePolicy {
@@ -31,12 +32,21 @@ export function validatePackageEntries(packages: PiPackageEntry[]): PolicyValida
     }
 
     if (
-      entry.extensions &&
-      entry.extensions.some(
-        (extensionPath) => typeof extensionPath !== "string" || extensionPath.length === 0,
-      )
+      entry.extensions !== undefined &&
+      (!Array.isArray(entry.extensions) ||
+        entry.extensions.some(
+          (extensionPath) => typeof extensionPath !== "string" || extensionPath.length === 0,
+        ))
     ) {
-      problems.push("`extensions` must be a non-empty string array when provided.");
+      problems.push("`extensions` must contain only non-empty strings when provided.");
+    }
+
+    if (
+      entry.skills !== undefined &&
+      (!Array.isArray(entry.skills) ||
+        entry.skills.some((skillPath) => typeof skillPath !== "string" || skillPath.length === 0))
+    ) {
+      problems.push("`skills` must contain only non-empty strings when provided.");
     }
 
     return {
