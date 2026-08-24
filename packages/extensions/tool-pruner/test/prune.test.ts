@@ -30,6 +30,7 @@ test("resolveAllowedToolNames defaults include paired subagent retrieval and con
   assert.ok(allowed.includes("web_search"));
   assert.ok(allowed.includes("fetch_content"));
   assert.ok(allowed.includes("get_search_content"));
+  assert.ok(allowed.includes("mcp"));
 });
 
 test("resolveAllowedToolNames lets explicit allow replace defaults and deny removes entries", () => {

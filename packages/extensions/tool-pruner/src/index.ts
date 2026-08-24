@@ -1,6 +1,6 @@
 import {
   definePiExtension,
-  getAllToolNames,
+  getActiveToolNames,
   safeNotify,
   setActivePiTools,
   type PiExtensionApi,
@@ -35,7 +35,7 @@ export function applyToolPruner(
     return { disabledNames: [], keptNames: [], reason: "disabled" };
   }
 
-  const availableNames = getAllToolNames(pi);
+  const availableNames = getActiveToolNames(pi);
   if (availableNames.length === 0) {
     return { disabledNames: [], keptNames: [], reason: "no-tools" };
   }

@@ -22,4 +22,6 @@ To opt into personal knowledge-capture guidance, copy `agent-context.example.jso
 
 `pnpm pi:sync` replaces `<VAULT>` in guarded AGENTS blocks with that path and omits those blocks when no vault is configured.
 
+The tracked `config/pi/agent/mcp.json` contains only the Notion endpoint and OAuth mode. Never add OAuth tokens, callback codes, authorization URLs, bearer headers, or MCP cache contents to either tracked config or a settings overlay. `pi-mcp-adapter` stores persistent OAuth credentials in the operating-system credential store.
+
 Everything in this directory is ignored by git except this file and tracked example files.

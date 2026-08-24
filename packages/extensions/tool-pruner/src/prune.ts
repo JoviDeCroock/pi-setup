@@ -9,6 +9,7 @@ export const DEFAULT_ALLOWED_TOOL_NAMES = [
   "web_search",
   "fetch_content",
   "get_search_content",
+  "mcp",
 ] as const;
 
 export interface ToolPrunerEnvironment {

@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeToolExecutionArgs, textResult } from "../src/index.js";
+import { getActiveToolNames, normalizeToolExecutionArgs, textResult } from "../src/index.js";
+
+test("getActiveToolNames preserves the runtime tool boundary", () => {
+  assert.deepEqual(
+    getActiveToolNames({
+      getActiveTools: () => ["read", "bash"],
+      on() {},
+      registerTool() {},
+    }),
+    ["read", "bash"],
+  );
+});
 
 test("textResult returns a Pi-compatible text payload", () => {
   assert.deepEqual(textResult("ready"), {

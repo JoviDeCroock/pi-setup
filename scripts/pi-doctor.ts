@@ -8,6 +8,7 @@ import {
   renderAgentsTemplateText,
   renderSettingsTemplateText,
   validateDefaultPackagePolicy,
+  validateManagedMcpConfig,
   validatePackageEntries,
   type JsonObject,
 } from "../packages/pi-kit/src/index.js";
@@ -31,7 +32,9 @@ async function main(): Promise<void> {
   const agentHome = process.env.PI_AGENT_HOME || join(os.homedir(), ".pi", "agent");
   const templatePath = join(repoRoot, "config", "pi", "agent", "settings.template.json");
   const packagePolicyPath = join(repoRoot, "config", "pi", "agent", "package-policy.json");
+  const agentDefinitionsDirectory = join(repoRoot, "config", "pi", "agent", "agents");
   const agentsTemplatePath = join(repoRoot, "config", "pi", "agent", "AGENTS.md");
+  const mcpConfigPath = join(repoRoot, "config", "pi", "agent", "mcp.json");
   const privateSettingsOverlayPath = join(
     repoRoot,
     "config",
@@ -78,6 +81,17 @@ async function main(): Promise<void> {
       required: true,
     },
     {
+      label: "user agent directory",
+      path: agentDefinitionsDirectory,
+      required: true,
+    },
+    ...["sol", "terra", "luna"].map((name) => ({
+      label: `user agent ${name}`,
+      path: join(agentDefinitionsDirectory, `${name}.md`),
+      required: true,
+    })),
+    { label: "Pi MCP config", path: mcpConfigPath, required: true },
+    {
       label: "prompt directory",
       path: join(repoRoot, "config", "pi", "agent", "prompts"),
       required: true,
@@ -119,6 +133,28 @@ async function main(): Promise<void> {
         privateAgentContext?.vault ? "configured" : "not configured"
       }`,
     );
+  }
+
+  const agentValidations = await validateAgents(agentDefinitionsDirectory);
+  for (const validation of agentValidations) {
+    const status = validation.ok ? "OK" : "INVALID";
+    console.log(`- [${status}] user agent metadata: ${validation.path}`);
+
+    if (!validation.ok) {
+      failed = true;
+      for (const problem of validation.problems) {
+        console.log(`  ${problem}`);
+      }
+    }
+  }
+
+  const mcpValidation = await validateMcpConfig(mcpConfigPath);
+  console.log(`- [${mcpValidation.ok ? "OK" : "INVALID"}] Notion MCP config: ${mcpConfigPath}`);
+  if (!mcpValidation.ok) {
+    failed = true;
+    for (const problem of mcpValidation.problems) {
+      console.log(`  ${problem}`);
+    }
   }
 
   const skillValidations = await validateSkills(join(repoRoot, "config", "pi", "agent", "skills"));
@@ -183,6 +219,88 @@ async function pathExists(candidatePath: string): Promise<boolean> {
   }
 }
 
+async function validateAgents(agentsDirectory: string): Promise<AgentValidation[]> {
+  if (!(await pathExists(agentsDirectory))) {
+    return [];
+  }
+
+  const expectedModels = new Map([
+    ["sol", "openai-codex/gpt-5.6-sol"],
+    ["terra", "openai-codex/gpt-5.6-terra"],
+    ["luna", "openai-codex/gpt-5.6-luna"],
+  ]);
+  const agentFiles = await listFiles(agentsDirectory, {
+    include: (filePath) => filePath.endsWith(".md") && !filePath.endsWith(".chain.md"),
+  });
+
+  return Promise.all(
+    agentFiles.map(async (agentPath) => {
+      const content = await readUtf8(agentPath);
+      const fields = parseFrontmatterFields(content);
+      const problems: string[] = [];
+      const expectedName = agentPath.split(/[/\\]/u).at(-1)?.replace(/\.md$/u, "");
+      const declaredName = fields.get("name");
+
+      if (!declaredName) {
+        problems.push("Missing required `name` field.");
+      } else if (declaredName !== expectedName) {
+        problems.push(`\`name\` should match the agent filename \`${expectedName}\`.`);
+      }
+
+      if (!fields.get("description")) {
+        problems.push("Missing required `description` field.");
+      }
+
+      const expectedModel = expectedName ? expectedModels.get(expectedName) : undefined;
+      if (expectedModel && fields.get("model") !== expectedModel) {
+        problems.push(`Expected model \`${expectedModel}\`.`);
+      }
+
+      if (fields.get("systemPromptMode") !== "append") {
+        problems.push("Expected `systemPromptMode: append`.");
+      }
+
+      if (fields.get("inheritProjectContext") !== "true") {
+        problems.push("Expected `inheritProjectContext: true`.");
+      }
+
+      if (fields.get("maxSubagentDepth") !== "0") {
+        problems.push("Expected `maxSubagentDepth: 0`.");
+      }
+
+      return { ok: problems.length === 0, path: agentPath, problems };
+    }),
+  );
+}
+
+async function validateMcpConfig(mcpConfigPath: string): Promise<McpValidation> {
+  if (!(await pathExists(mcpConfigPath))) {
+    return { ok: false, problems: ["MCP config is missing."] };
+  }
+
+  try {
+    return validateManagedMcpConfig(JSON.parse(await readUtf8(mcpConfigPath)) as unknown);
+  } catch {
+    return { ok: false, problems: ["MCP config is not valid JSON."] };
+  }
+}
+
+function parseFrontmatterFields(content: string): Map<string, string> {
+  const frontmatterMatch = /^---\r?\n([\s\S]*?)\r?\n---/u.exec(content);
+  const fields = new Map<string, string>();
+  if (!frontmatterMatch) {
+    return fields;
+  }
+
+  for (const line of (frontmatterMatch[1] ?? "").split(/\r?\n/u)) {
+    const fieldMatch = /^([A-Za-z][A-Za-z0-9]*):\s*(.*?)\s*$/u.exec(line);
+    if (fieldMatch?.[1]) {
+      fields.set(fieldMatch[1], fieldMatch[2] ?? "");
+    }
+  }
+  return fields;
+}
+
 async function validateSkills(skillsDirectory: string): Promise<SkillValidation[]> {
   if (!(await pathExists(skillsDirectory))) {
     return [];
@@ -237,6 +355,17 @@ async function validateSkills(skillsDirectory: string): Promise<SkillValidation[
   }
 
   return validations;
+}
+
+interface AgentValidation {
+  ok: boolean;
+  path: string;
+  problems: string[];
+}
+
+interface McpValidation {
+  ok: boolean;
+  problems: string[];
 }
 
 interface SkillValidation {

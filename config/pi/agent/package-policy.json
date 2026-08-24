@@ -16,6 +16,11 @@
     {
       "source": "npm:pi-web-access@0.10.6",
       "publishedAt": "2026-04-04T02:14:59.997Z"
+    },
+    {
+      "source": "npm:pi-mcp-adapter@2.26.0",
+      "publishedAt": "2026-08-14T23:29:05.753Z",
+      "skills": []
     }
   ]
 }

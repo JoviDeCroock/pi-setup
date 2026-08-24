@@ -200,6 +200,13 @@ export function appendSessionEntry(pi: PiExtensionApi, customType: string, data:
   pi.appendEntry?.(customType, data);
 }
 
+export function getActiveToolNames(pi: PiExtensionApi): string[] {
+  const tools = pi.getActiveTools?.();
+  return Array.isArray(tools)
+    ? tools.filter((name): name is string => typeof name === "string" && name.length > 0)
+    : [];
+}
+
 export function getAllToolNames(pi: PiExtensionApi): string[] {
   const tools = pi.getAllTools?.();
 

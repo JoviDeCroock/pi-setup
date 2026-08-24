@@ -22,6 +22,20 @@ test("validatePackageEntries requires exact versions for npm package sources", (
   assert.equal(validations[3]?.ok, true);
 });
 
+test("validatePackageEntries allows an empty skills filter and rejects malformed entries", () => {
+  const validations = validatePackageEntries([
+    { source: "npm:pi-mcp-adapter@2.26.0", skills: [] },
+    { source: "npm:broken@1.0.0", skills: [""] },
+    { source: "npm:wrong-shape@1.0.0", skills: "bad" } as never,
+    { source: "npm:wrong-extensions@1.0.0", extensions: "bad" } as never,
+  ]);
+
+  assert.equal(validations[0]?.ok, true);
+  assert.equal(validations[1]?.ok, false);
+  assert.equal(validations[2]?.ok, false);
+  assert.equal(validations[3]?.ok, false);
+});
+
 test("validateDefaultPackagePolicy enforces minimum release age for pinned npm packages", () => {
   const validations = validateDefaultPackagePolicy(
     {

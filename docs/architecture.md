@@ -8,7 +8,11 @@
 
 - `settings.template.json` is rendered with absolute workspace paths
 - `AGENTS.md` holds global Pi guidance and guarded optional blocks rendered by `pi:sync`
+- `agents/` defines the user-scoped Sol, Terra, and Luna delegation roles
+- `mcp.json` declares a secret-free, proxy-only Notion MCP connection
 - `prompts/` and `skills/` add reusable operator workflows
+
+`pi:sync` treats prompts, skills, settings, AGENTS guidance, MCP configuration, and the three tracked agent definitions as repository-authoritative. It records the tracked agent filenames in a target-side manifest so later syncs replace or remove only repo-managed agents while preserving unrelated user agents created through `/agents`. OAuth credentials, auth files, trust state, caches, and sessions remain machine-local and are never copied from the repository.
 
 ## 2. Shared libraries
 
