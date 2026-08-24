@@ -2,7 +2,10 @@
 - Read relevant files before editing.
 - Prefer small, reviewable changes.
 - State assumptions when uncertain.
+- For bug fixes, when practical, first add or identify a focused regression test that fails for the intended reason; then fix the bug and rerun it.
 - Run relevant tests or checks when practical.
+- Treat public API or visibility widening as a design change; avoid it unless required and call it out explicitly.
+- Comment non-obvious intent, constraints, and tradeoffs, not mechanics already clear from the code.
 - Never add `Validation` or `Verification` sections to pull request descriptions; remove them from PR bodies you create or edit.
 - Do not post issue or pull request comments unless the user explicitly asks.
 - Prefer explicit tools and visible context over invisible automation.
@@ -14,14 +17,11 @@
 - Never run broad destructive cleanup such as `docker system prune --volumes`, hard resets, direct commits to a protected main branch, or force-pushes without explicit authorization. Authorized force-pushes must use `--force-with-lease`.
 - Keep durable context modular:
   - put always-applicable project guidance in `AGENTS.md`;
+  - when the same review correction recurs, propose the smallest durable `AGENTS.md` or skill update;
   - suggest creating a Pi skill when a task reveals a repeatable workflow, checklist, or specialized procedure.
 - Maintain durable project state only inside the `Ada Brain` Notion page tree through the Notion MCP:
-  - load the `project-notes` skill when work changes lasting status, decisions, constraints, risks, architecture context, or next steps;
-  - use `Ada Brain → Projects → <group> → <project>` as the canonical location, update an existing project page instead of creating per-session notes, and never write outside `Ada Brain`;
-  - ask before creating the first project page or choosing between ambiguous groups; when approved, follow `Ada Brain → System → Template — Project`;
-  - use `Sources` for immutable evidence and `Inbox` only for material that cannot yet be routed, not as substitutes for project notes;
-  - never persist secrets, private transcript excerpts, large code dumps, or unverified speculation; link to authoritative code, ADRs, issues, and PRs;
-  - keep note writes visible by naming the page and summarizing what changed.
+  - load and follow the `project-notes` skill when work changes lasting status, decisions, constraints, risks, architecture context, or next steps;
+  - keep note writes visible and never persist secrets, private transcript excerpts, large code dumps, or unverified speculation.
 - Delegate deliberately between the user agents `sol`, `terra`, and `luna` rather than defaulting to a generic subagent:
   - choose `sol` when ambiguity, architecture, synthesis, root-cause reasoning, or the cost of error dominates;
   - choose `terra` for bounded implementation, debugging, refactoring, tests, and routine review;
