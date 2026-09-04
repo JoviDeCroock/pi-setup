@@ -10,9 +10,10 @@ The repo is optimized for maintainability and verification, not for a single dem
 ## What you get
 
 - A workspace-managed extension lab with shared utilities and a Pi compatibility layer
-- Three repo-built extensions:
+- Four repo-built extensions:
   - `usage-insights` for session telemetry and lightweight reporting
   - `minimal-output` for compacting noisy `tsc`, lint, test, build, and package-manager Bash output before it enters model context
+  - `context-management` for explicit plaintext handoffs before context exhaustion
   - `tool-pruner` for keeping only the most useful third-party callable tools in the prompt by default
 - Five curated third-party extensions in the generated global Pi config:
   - `pi-powerline-footer`
@@ -111,12 +112,18 @@ tsc: 2 errors
 
 ### `tool-pruner`
 
-Uses Pi's documented active-tool API to keep the callable tool list small before each agent turn. By default it keeps `read`, `bash`, `edit`, `write`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Override with environment variables:
+Uses Pi's documented active-tool API to keep the callable tool list small before each agent turn. By default it keeps `read`, `bash`, `edit`, `write`, `history_note`, `new_context`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, and `get_search_content`. Override with environment variables:
 
 - `PI_TOOL_PRUNER_ALLOW="read,bash,edit,write,web_search"` to replace the default allowlist
 - `PI_TOOL_PRUNER_EXTRA_ALLOW="code_search,subagent_status"` to add to the default allowlist
 - `PI_TOOL_PRUNER_DENY="usage_insights_report"` to remove entries from the final allowlist
 - `PI_TOOL_PRUNER_DISABLED=true` to opt out for a session
+
+### `context-management`
+
+Adds a token-budget reminder plus `history_note` and `new_context` tools for the main interactive `openai-codex` session. `history_note` can record incremental checkpoints; `new_context` atomically persists its final `note` argument and starts a follow-up turn whose provider context begins at that checkpoint. Earlier assistant messages—including opaque reasoning state—remain in the local session log but are not sent across the boundary. Pi compaction and tree summarization are blocked after a boundary so their independent summarizers cannot re-import pre-boundary reasoning.
+
+The extension intentionally stays off for API-key and custom providers and for headless/structured worker sessions. Disable it with `PI_CONTEXT_MANAGEMENT_EXPERIMENTAL_MODE=false`, or change the default 32,000-token reminder threshold with `PI_CONTEXT_MANAGEMENT_REMINDER_TOKENS=<n>`.
 
 ## Default external packages
 
