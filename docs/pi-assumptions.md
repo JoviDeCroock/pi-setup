@@ -15,6 +15,8 @@ These are explicitly described in the Pi docs:
 - `tool_result` handlers can patch Bash tool result content and details before the result is saved into context.
 - `appendEntry(...)` can persist custom session data.
 - `sendMessage(...)` can append a model-visible custom message and trigger a follow-up turn.
+- Custom messages keep their `customType` when Pi rebuilds the `context` event's message array, including after a session reload; `context-management` slices on that field.
+- `agent_settled` still fires after a `tool_call` handler blocks with `terminate: true` and calls `ctx.abort()`; `context-management` queues the handoff there. Verified manually on Pi 0.84.4 and not covered by an automated test.
 - `getContextUsage()` reports estimated active-model context usage.
 - `getAllTools(...)` and `setActiveTools(...)` can inspect and control active tools at runtime.
 - Pi reads global and project-scoped settings files.
@@ -86,7 +88,9 @@ Pi documents that `tool_result` handlers can return partial patches to `content`
 
 `context-management` mirrors Codex's experimental token-budget handoff without pretending Pi exposes session replacement to model-callable tools. Pi documents `newSession()` only on user-invoked command contexts because calling it from tools or lifecycle handlers can deadlock. The extension atomically validates and persists the final `new_context.note`, blocks that tool call, aborts the active loop, and uses Pi's documented early-termination hint. After the agent settles, it injects one plaintext history-note message, triggers the next turn, and filters all earlier messages from subsequent provider context.
 
-That boundary is deliberate: opaque provider reasoning state is not copied forward. It follows the defensive implication of _Stealing Reasoning Traces_ rather than serializing or replaying hidden reasoning blobs across a task boundary. Full history remains in Pi's local JSONL session for audit; only the model-visible context is reset. Because Pi's compaction and tree-summary paths independently read local history rather than the filtered provider context, model-authored compaction and tree summaries are cancelled after a context boundary; subsequent rollover is handled by another explicit `new_context` checkpoint instead.
+That boundary is deliberate: opaque provider reasoning state is not copied forward. It follows the defensive implication of _Stealing Reasoning Traces_ rather than serializing or replaying hidden reasoning blobs across a task boundary. Full history remains in Pi's local JSONL session for audit; only the model-visible context is reset. Because Pi's compaction and tree-summary paths independently read local history rather than the filtered provider context, model-authored compaction and tree summaries are cancelled after a context boundary while the model still has room to checkpoint itself. Once the remaining budget falls to a quarter of the reminder threshold without a new checkpoint, they are allowed again as a safety net, with a UI warning, because an overflow is worse than a model-written summary.
+
+Reminders are injected as a trailing custom message on the next model request rather than appended to the system prompt, so the cached prompt prefix survives; near the window limit that prefix is at its most expensive. An unanswered reminder repeats every three turns and escalates its wording once the remaining budget drops below half the threshold.
 
 Activation is conservative. The tools are available only in interactive TUI sessions using Pi's `openai-codex` subscription provider. API-key (`openai`), custom-provider, print, JSON, RPC, and headless temporary-worker sessions are excluded. Set `PI_CONTEXT_MANAGEMENT_EXPERIMENTAL_MODE=false` to disable the feature or `PI_CONTEXT_MANAGEMENT_REMINDER_TOKENS=<n>` to override the default 32,000-token reminder threshold.
 

@@ -16,10 +16,12 @@ import {
 
 import {
   HISTORY_NOTE_CUSTOM_TYPE,
+  REMINDER_REPEAT_TURNS,
   buildContextWindowReminder,
   normalizeHistoryNote,
   resolveContextManagementEligibility,
   resolveReminderThreshold,
+  shouldFallBackToCompaction,
   sliceAfterLatestHistoryNote,
   type ContextManagementEnvironment,
   type ContextMessageLike,
@@ -45,10 +47,6 @@ interface SavedHistoryNote {
   note: string;
 }
 
-interface BeforeAgentStartEventLike {
-  systemPrompt?: unknown;
-}
-
 interface ContextEventLike {
   messages?: unknown;
 }
@@ -71,8 +69,29 @@ export function createContextManagementExtension(options: ContextManagementExten
     let pendingHandoff: SavedHistoryNote | undefined;
     let pendingReminder: string | undefined;
     let reminderIssued = false;
+    let turnsSinceReminder = 0;
     let awaitingFreshUsage = false;
     let hasBoundary = false;
+
+    // Reminders ride along as a trailing custom message rather than a system-prompt edit so the
+    // cached prompt prefix survives; near the window limit that prefix is at its most expensive.
+    const queueReminderIfDue = (ctx: PiExtensionContext | undefined) => {
+      if (!capabilityAvailable(ctx) || pendingReminder) {
+        return;
+      }
+      if (reminderIssued && turnsSinceReminder < REMINDER_REPEAT_TURNS) {
+        return;
+      }
+      const reminder = buildContextWindowReminder(
+        ctx?.getContextUsage?.(),
+        resolveReminderThreshold(env),
+      );
+      if (reminder) {
+        pendingReminder = reminder;
+        reminderIssued = true;
+        turnsSinceReminder = 0;
+      }
+    };
 
     const eligible = (ctx: PiExtensionContext | undefined) =>
       resolveContextManagementEligibility(ctx, env).eligible;
@@ -158,7 +177,7 @@ export function createContextManagementExtension(options: ContextManagementExten
           return textResult("new_context requires a history_note checkpoint first.");
         }
         return textResult(
-          "new_context interception failed. The history note is still saved; retry new_context.",
+          "new_context could not start a boundary in this runtime. The history note is saved in the session log; do not retry new_context. Continue with the most important remaining work, keep updating history_note, and tell the user that the context handoff is unavailable so they can start a fresh session from the saved note.",
         );
       },
     });
@@ -210,6 +229,7 @@ export function createContextManagementExtension(options: ContextManagementExten
       pendingHandoff = undefined;
       pendingReminder = undefined;
       reminderIssued = false;
+      turnsSinceReminder = 0;
       awaitingFreshUsage = false;
       hasBoundary = getSessionEntries(ctx).some(
         (entry: PiSessionEntryLike) => entry.customType === HISTORY_BOUNDARY_ENTRY_TYPE,
@@ -221,25 +241,9 @@ export function createContextManagementExtension(options: ContextManagementExten
       removeToolsWhenIneligible(ctx);
     });
 
-    pi.on("before_agent_start", async (event, ctx) => {
+    pi.on("before_agent_start", async (_event, ctx) => {
       removeToolsWhenIneligible(ctx);
-      if (!capabilityAvailable(ctx)) {
-        return;
-      }
-
-      const reminder = buildContextWindowReminder(
-        ctx.getContextUsage?.(),
-        resolveReminderThreshold(env),
-      );
-      if (!reminder || reminderIssued) {
-        return;
-      }
-      reminderIssued = true;
-
-      const systemPrompt = (event as BeforeAgentStartEventLike).systemPrompt;
-      if (typeof systemPrompt === "string") {
-        return { systemPrompt: `${systemPrompt}\n\n${reminder}` };
-      }
+      queueReminderIfDue(ctx);
     });
 
     pi.on("context", async (event) => {
@@ -275,18 +279,11 @@ export function createContextManagementExtension(options: ContextManagementExten
       if (awaitingFreshUsage) {
         awaitingFreshUsage = false;
         reminderIssued = false;
+        turnsSinceReminder = 0;
+      } else if (reminderIssued) {
+        turnsSinceReminder += 1;
       }
-      if (reminderIssued) {
-        return;
-      }
-      const reminder = buildContextWindowReminder(
-        ctx.getContextUsage?.(),
-        resolveReminderThreshold(env),
-      );
-      if (reminder) {
-        pendingReminder = reminder;
-        reminderIssued = true;
-      }
+      queueReminderIfDue(ctx);
     });
 
     pi.on("agent_settled", async (_event, ctx) => {
@@ -307,6 +304,7 @@ export function createContextManagementExtension(options: ContextManagementExten
 
       pendingReminder = undefined;
       reminderIssued = true;
+      turnsSinceReminder = 0;
       awaitingFreshUsage = true;
       hasBoundary = true;
       appendSessionEntry(pi, HISTORY_BOUNDARY_ENTRY_TYPE, handoff);
@@ -324,17 +322,27 @@ export function createContextManagementExtension(options: ContextManagementExten
       );
     });
 
-    pi.on("session_before_compact", async () => {
-      if (hasBoundary) {
-        return { cancel: true };
+    // After a boundary, Pi's own summarizers read local history and could re-import pre-boundary
+    // content, so they stay cancelled while the model still has room to checkpoint itself. Once the
+    // budget is nearly gone they run again: an overflow is worse than a model-written summary.
+    const blockSummarizer = (ctx: PiExtensionContext | undefined, label: string) => {
+      if (!hasBoundary) {
+        return undefined;
       }
-    });
+      if (shouldFallBackToCompaction(ctx?.getContextUsage?.(), resolveReminderThreshold(env))) {
+        safeNotify(
+          ctx,
+          `Context budget is nearly gone without a new_context checkpoint; allowing Pi ${label} as a fallback.`,
+          "warning",
+        );
+        return undefined;
+      }
+      return { cancel: true };
+    };
 
-    pi.on("session_before_tree", async () => {
-      if (hasBoundary) {
-        return { cancel: true };
-      }
-    });
+    pi.on("session_before_compact", async (_event, ctx) => blockSummarizer(ctx, "compaction"));
+
+    pi.on("session_before_tree", async (_event, ctx) => blockSummarizer(ctx, "tree summary"));
   });
 }
 

@@ -3,6 +3,13 @@ import type { PiContextUsage, PiExtensionContext } from "@pi-setup/pi-kit";
 export const HISTORY_NOTE_CUSTOM_TYPE = "context-management-history-note";
 export const DEFAULT_REMINDER_THRESHOLD_TOKENS = 32_000;
 export const MAX_HISTORY_NOTE_CHARS = 12_000;
+/** Turns to wait before repeating an unanswered reminder. */
+export const REMINDER_REPEAT_TURNS = 3;
+/**
+ * Below this share of the reminder threshold, Pi's own compaction is allowed to run again as a
+ * safety net even after a boundary, because an overflow is worse than a model-written summary.
+ */
+export const COMPACTION_FALLBACK_RATIO = 0.25;
 
 export interface ContextManagementEnvironment {
   PI_CONTEXT_MANAGEMENT_EXPERIMENTAL_MODE?: string;
@@ -49,20 +56,36 @@ export function resolveReminderThreshold(env: ContextManagementEnvironment = pro
     : DEFAULT_REMINDER_THRESHOLD_TOKENS;
 }
 
+export function remainingContextTokens(usage: PiContextUsage | undefined): number | undefined {
+  if (!usage || usage.tokens === null) {
+    return undefined;
+  }
+  return Math.max(usage.contextWindow - usage.tokens, 0);
+}
+
+export function shouldFallBackToCompaction(
+  usage: PiContextUsage | undefined,
+  thresholdTokens = DEFAULT_REMINDER_THRESHOLD_TOKENS,
+): boolean {
+  const remaining = remainingContextTokens(usage);
+  return remaining !== undefined && remaining <= thresholdTokens * COMPACTION_FALLBACK_RATIO;
+}
+
 export function buildContextWindowReminder(
   usage: PiContextUsage | undefined,
   thresholdTokens = DEFAULT_REMINDER_THRESHOLD_TOKENS,
 ): string | undefined {
-  if (!usage || usage.tokens === null) {
+  const remaining = remainingContextTokens(usage);
+  if (remaining === undefined || remaining > thresholdTokens) {
     return undefined;
   }
 
-  const remaining = Math.max(usage.contextWindow - usage.tokens, 0);
-  if (remaining > thresholdTokens) {
-    return undefined;
-  }
-
-  const urgency = remaining === 0 ? "is exhausted" : "is nearly exhausted";
+  const urgency =
+    remaining === 0
+      ? "is exhausted"
+      : remaining <= thresholdTokens / 2
+        ? "is critically low; stop and checkpoint before any other tool call"
+        : "is nearly exhausted";
   return `<context_window_reminder>\nYour current context window ${urgency}; only ${remaining} tokens remain. Before continuing substantial work, call new_context exactly once with a concise operational checkpoint in its note argument covering the goal, decisions, progress, learnings, next steps, and identifiers for unresolved requests. Record conclusions and evidence, never hidden chain-of-thought or opaque reasoning state. The next model request will contain only that plaintext checkpoint and messages created after the boundary.\n</context_window_reminder>`;
 }
 
@@ -76,7 +99,7 @@ export function normalizeHistoryNote(note: string): string {
   }
   if (containsOpaqueReasoningState(normalized)) {
     throw new Error(
-      "History note contains an opaque reasoning marker or ciphertext-like payload. Save conclusions and evidence only.",
+      "History note contains an opaque reasoning marker or a long base64/hex run that looks like encoded state. Save conclusions and evidence in plain text; shorten or omit long tokens, hashes, and minified snippets.",
     );
   }
   return normalized;

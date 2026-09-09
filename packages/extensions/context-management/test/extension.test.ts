@@ -69,20 +69,14 @@ test("new_context terminates and continues with only the explicit history note",
   assert.match(String(sent[0]?.message.content), /finish the migration/);
   assert.deepEqual(sent[0]?.options, { triggerTurn: true });
 
-  const staleUsageReminder = await handlers.get("before_agent_start")?.(
-    { systemPrompt: "base" },
-    ctx,
-  );
+  const staleUsageReminder = await handlers.get("before_agent_start")?.({}, ctx);
   assert.equal(staleUsageReminder, undefined);
 
   const freshContext = eligibleContext({
     getContextUsage: () => ({ contextWindow: 200_000, percent: 5, tokens: 10_000 }),
   });
   await handlers.get("turn_end")?.({}, freshContext);
-  const freshUsageReminder = await handlers.get("before_agent_start")?.(
-    { systemPrompt: "base" },
-    freshContext,
-  );
+  const freshUsageReminder = await handlers.get("before_agent_start")?.({}, freshContext);
   assert.equal(freshUsageReminder, undefined);
 
   const old = { role: "assistant", content: "old opaque reasoning" };
@@ -97,7 +91,7 @@ test("new_context terminates and continues with only the explicit history note",
   assert.deepEqual(treeSummary, { cancel: true });
 });
 
-test("reminder is appended only for eligible low-budget sessions", async () => {
+function reminderHarness() {
   const handlers = new Map<string, (event: unknown, ctx: PiExtensionContext) => Promise<unknown>>();
   const pi: PiExtensionApi = {
     getActiveTools: () => ["history_note", "new_context"],
@@ -106,17 +100,69 @@ test("reminder is appended only for eligible low-budget sessions", async () => {
     },
     registerTool() {},
   };
-
   createContextManagementExtension()(pi);
+  const contextText = async (ctx: PiExtensionContext) =>
+    JSON.stringify(await handlers.get("context")?.({ messages: [{ role: "user" }] }, ctx));
+  return { contextText, handlers };
+}
+
+test("reminder is injected as a trailing message, never into the system prompt", async () => {
+  const { contextText, handlers } = reminderHarness();
   const beforeStart = handlers.get("before_agent_start");
+
   const eligible = await beforeStart?.({ systemPrompt: "base" }, eligibleContext());
-  assert.match(String((eligible as { systemPrompt?: string }).systemPrompt), /28000 tokens remain/);
+  assert.equal(eligible, undefined);
+  assert.match(await contextText(eligibleContext()), /28000 tokens remain/);
 
   const excluded = await beforeStart?.(
     { systemPrompt: "base" },
     eligibleContext({ mode: "print" }),
   );
   assert.equal(excluded, undefined);
+  assert.doesNotMatch(await contextText(eligibleContext({ mode: "print" })), /tokens remain/);
+});
+
+test("an unanswered reminder repeats after three turns and escalates as budget shrinks", async () => {
+  const { contextText, handlers } = reminderHarness();
+  const ctx = eligibleContext();
+  const turnEnd = handlers.get("turn_end");
+
+  await turnEnd?.({}, ctx);
+  assert.match(await contextText(ctx), /nearly exhausted/);
+
+  await turnEnd?.({}, ctx);
+  await turnEnd?.({}, ctx);
+  assert.doesNotMatch(await contextText(ctx), /tokens remain/);
+
+  const critical = eligibleContext({
+    getContextUsage: () => ({ contextWindow: 200_000, percent: 94, tokens: 188_000 }),
+  });
+  await turnEnd?.({}, critical);
+  assert.match(await contextText(critical), /critically low[^]*12000 tokens remain/);
+});
+
+test("compaction stays blocked after a boundary until the budget is nearly gone", async () => {
+  const handlers = new Map<string, (event: unknown, ctx: PiExtensionContext) => Promise<unknown>>();
+  const pi: PiExtensionApi = {
+    on(name, handler) {
+      handlers.set(name, handler as (event: unknown, ctx: PiExtensionContext) => Promise<unknown>);
+    },
+    registerTool() {},
+    sendMessage() {},
+  };
+  createContextManagementExtension()(pi);
+  const ctx = eligibleContext({ abort() {} });
+
+  await handlers.get("tool_call")?.({ input: { note: "Goal: x" }, toolName: "new_context" }, ctx);
+  await handlers.get("agent_settled")?.({}, ctx);
+
+  assert.deepEqual(await handlers.get("session_before_compact")?.({}, ctx), { cancel: true });
+
+  const nearlyGone = eligibleContext({
+    getContextUsage: () => ({ contextWindow: 200_000, percent: 97, tokens: 194_000 }),
+  });
+  assert.equal(await handlers.get("session_before_compact")?.({}, nearlyGone), undefined);
+  assert.equal(await handlers.get("session_before_tree")?.({}, nearlyGone), undefined);
 });
 
 test("a threshold crossed during a tool loop injects one reminder into the next request", async () => {
