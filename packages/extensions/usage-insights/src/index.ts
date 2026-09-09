@@ -19,6 +19,15 @@ import {
   usagePointsFromJsonl,
   type UsagePoint,
 } from "./analytics.js";
+import {
+  DELEGATION_ENTRY_TYPE,
+  delegationPointsFromEntries,
+  delegationPointsFromJsonl,
+  delegationsFromToolCall,
+  formatDelegationSummary,
+  summarizeDelegations,
+  type DelegationPoint,
+} from "./delegation.js";
 
 export interface UsageInsightsToolInput {
   limit?: number;
@@ -26,10 +35,19 @@ export interface UsageInsightsToolInput {
 }
 
 const livePoints: UsagePoint[] = [];
+const liveDelegations: DelegationPoint[] = [];
 
 const usageInsightsExtension = definePiExtension((pi) => {
   pi.on("session_start", async () => {
     livePoints.length = 0;
+    liveDelegations.length = 0;
+  });
+
+  pi.on("tool_call", (event) => {
+    for (const point of delegationsFromToolCall(event)) {
+      liveDelegations.push(point);
+      appendSessionEntry(pi, DELEGATION_ENTRY_TYPE, point);
+    }
   });
 
   pi.on("turn_end", async (event, ctx) => {
@@ -62,15 +80,22 @@ const usageInsightsExtension = definePiExtension((pi) => {
 
       try {
         let points: UsagePoint[];
+        let delegations: DelegationPoint[];
 
         if (params.sessionLogPath) {
           const absolutePath = resolve(ctx?.cwd ?? process.cwd(), params.sessionLogPath);
           const content = await readUtf8(absolutePath);
           points = usagePointsFromJsonl(content);
+          delegations = delegationPointsFromJsonl(content);
         } else {
-          points = usagePointsFromEntries(getSessionEntries(ctx));
+          const entries = getSessionEntries(ctx);
+          points = usagePointsFromEntries(entries);
+          delegations = delegationPointsFromEntries(entries);
           if (points.length === 0) {
             points = [...livePoints];
+          }
+          if (delegations.length === 0) {
+            delegations = [...liveDelegations];
           }
         }
 
@@ -85,12 +110,17 @@ const usageInsightsExtension = definePiExtension((pi) => {
         }
 
         const summary = summarizeUsage(points);
+        const delegationSummary = summarizeDelegations(delegations);
         safeNotify(ctx, `Usage insights compiled from ${points.length} points.`);
 
-        return textResult(formatUsageSummary(summary), {
-          pointCount: points.length,
-          summary,
-        });
+        return textResult(
+          [formatUsageSummary(summary), ...formatDelegationSummary(delegationSummary)].join("\n"),
+          {
+            delegationSummary,
+            pointCount: points.length,
+            summary,
+          },
+        );
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unexpected usage insights failure.";
@@ -102,5 +132,6 @@ const usageInsightsExtension = definePiExtension((pi) => {
 });
 
 export * from "./analytics.js";
+export * from "./delegation.js";
 
 export default usageInsightsExtension;

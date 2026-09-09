@@ -8,11 +8,12 @@
 
 - `settings.template.json` is rendered with absolute workspace paths
 - `AGENTS.md` holds global Pi guidance and guarded optional blocks rendered by `pi:sync`
-- `agents/` defines the user-scoped Sol, Terra, and Luna delegation roles
+- `APPEND_SYSTEM.md` is copied verbatim as the global system-prompt suffix and holds the orchestrator charter: Astra orchestrates and delegates, touched code is left better than found, and architecture is designed to scale
+- `agents/` defines the user-scoped delegation tiers: Luna (low-cost worker for scouting and bounded implementation) and Sol (deep reasoning and review)
 - `mcp.json` declares a secret-free, proxy-only Notion MCP connection
 - `prompts/` and `skills/` add reusable operator workflows
 
-`pi:sync` treats prompts, skills, settings, AGENTS guidance, MCP configuration, and the three tracked agent definitions as repository-authoritative. It records the tracked agent filenames in a target-side manifest so later syncs replace or remove only repo-managed agents while preserving unrelated user agents created through `/agents`. OAuth credentials, auth files, trust state, caches, and sessions remain machine-local and are never copied from the repository.
+`pi:sync` treats prompts, skills, settings, AGENTS guidance, `APPEND_SYSTEM.md`, MCP configuration, and the two tracked agent definitions as repository-authoritative. It records the tracked agent filenames in a target-side manifest so later syncs replace or remove only repo-managed agents while preserving unrelated user agents created through `/agents`. OAuth credentials, auth files, trust state, caches, and sessions remain machine-local and are never copied from the repository.
 
 ## 2. Shared libraries
 

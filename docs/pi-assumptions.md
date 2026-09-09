@@ -15,7 +15,9 @@ These are explicitly described in the Pi docs:
 - `getAllTools(...)` and `setActiveTools(...)` can inspect and control active tools at runtime.
 - Pi reads global and project-scoped settings files.
 - Pi reads `AGENTS.md` context files.
+- Pi appends `~/.pi/agent/APPEND_SYSTEM.md` to the system prompt of every session; this setup uses it for the orchestrator charter only.
 - Pi discovers user subagent definitions through the installed `pi-subagents` package; the agent file format and locations are third-party extension behavior.
+- The `subagent` tool from `pi-subagents` accepts either a single `agent` + `task` input or a `tasks` array whose items carry `agent`; `usage-insights` reads only those fields from `tool_call` events, tolerates anything else, and treats `action: "list"` style calls as non-delegations.
 
 Pi does not provide native MCP support. This setup uses the third-party `pi-mcp-adapter` package and its documented `mcp.json`, proxy tool, and OAuth surfaces.
 

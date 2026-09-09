@@ -81,11 +81,16 @@ async function main(): Promise<void> {
       required: true,
     },
     {
+      label: "global Pi APPEND_SYSTEM",
+      path: join(repoRoot, "config", "pi", "agent", "APPEND_SYSTEM.md"),
+      required: true,
+    },
+    {
       label: "user agent directory",
       path: agentDefinitionsDirectory,
       required: true,
     },
-    ...["sol", "terra", "luna"].map((name) => ({
+    ...["sol", "luna"].map((name) => ({
       label: `user agent ${name}`,
       path: join(agentDefinitionsDirectory, `${name}.md`),
       required: true,
@@ -226,7 +231,6 @@ async function validateAgents(agentsDirectory: string): Promise<AgentValidation[
 
   const expectedModels = new Map([
     ["sol", "openai-codex/gpt-5.6-sol"],
-    ["terra", "openai-codex/gpt-5.6-terra"],
     ["luna", "openai-codex/gpt-5.6-luna"],
   ]);
   const agentFiles = await listFiles(agentsDirectory, {
