@@ -16,6 +16,7 @@
   "extensions": [
     "__PI_SETUP_ROOT__/packages/extensions/usage-insights/dist/index.mjs",
     "__PI_SETUP_ROOT__/packages/extensions/minimal-output/dist/index.mjs",
-    "__PI_SETUP_ROOT__/packages/extensions/tool-pruner/dist/index.mjs"
+    "__PI_SETUP_ROOT__/packages/extensions/tool-pruner/dist/index.mjs",
+    "__PI_SETUP_ROOT__/packages/extensions/context-management/dist/index.mjs"
   ]
 }

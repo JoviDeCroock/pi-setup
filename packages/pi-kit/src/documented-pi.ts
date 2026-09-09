@@ -18,8 +18,16 @@ export interface PiUiContext {
 }
 
 export interface PiModelLike {
+  api?: string;
   id?: string;
   name?: string;
+  provider?: string;
+}
+
+export interface PiContextUsage {
+  contextWindow: number;
+  percent: number | null;
+  tokens: number | null;
 }
 
 export interface PiSessionEntryLike {
@@ -33,9 +41,11 @@ export interface PiSessionManagerLike {
 }
 
 export interface PiExtensionContext {
+  abort?: () => void;
   cwd: string;
-  getContextUsage?: () => Record<string, unknown> | undefined;
+  getContextUsage?: () => PiContextUsage | undefined;
   hasUI: boolean;
+  mode?: "json" | "print" | "rpc" | "tui";
   model?: PiModelLike;
   sessionManager?: PiSessionManagerLike;
   signal?: AbortSignal;
@@ -82,6 +92,19 @@ export interface PiToolDefinition {
   label?: string;
   name: string;
   parameters: unknown;
+  executionMode?: "parallel" | "sequential";
+}
+
+export interface PiCustomMessage {
+  content: string;
+  customType: string;
+  details?: Record<string, unknown>;
+  display: boolean;
+}
+
+export interface PiSendMessageOptions {
+  deliverAs?: "followUp" | "nextTurn" | "steer";
+  triggerTurn?: boolean;
 }
 
 export interface PiToolInfo {
@@ -102,6 +125,7 @@ export interface PiExtensionApi {
   on: (event: string, handler: PiEventHandler) => void;
   registerCommand?: (name: string, definition: PiCommandDefinition) => void;
   registerTool: (tool: PiToolDefinition) => void;
+  sendMessage?: (message: PiCustomMessage, options?: PiSendMessageOptions) => void;
   setActiveTools?: (names: string[]) => void;
 }
 
