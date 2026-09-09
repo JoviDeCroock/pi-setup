@@ -1,7 +1,7 @@
 {
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
-  "defaultThinkingLevel": "high",
+  "defaultModel": "gpt-6-astra",
+  "defaultThinkingLevel": "medium",
   "collapseChangelog": true,
   "theme": "dark",
   "compaction": {
@@ -10,7 +10,7 @@
   },
   "npmCommand": ["pnpm"],
   "subagents": {
-    "defaultModel": "openai-codex/gpt-5.6-terra"
+    "defaultModel": "openai-codex/gpt-5.6-luna"
   },
   "packages": "__PI_SETUP_DEFAULT_PACKAGES__",
   "extensions": [

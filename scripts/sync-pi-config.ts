@@ -52,6 +52,7 @@ async function main(): Promise<void> {
   const promptsSource = join(sourceRoot, "prompts");
   const skillsSource = join(sourceRoot, "skills");
   const agentsTemplatePath = join(sourceRoot, "AGENTS.md");
+  const appendSystemPath = join(sourceRoot, "APPEND_SYSTEM.md");
 
   if (await pathIsAtOrWithin(options.targetDirectory, sourceRoot)) {
     throw new Error("Refusing to sync the managed Pi config into its source directory tree.");
@@ -74,6 +75,7 @@ async function main(): Promise<void> {
   );
   const privateAgentContext = await readOptionalPrivateAgentContext(privateAgentContextPath);
   const renderedAgents = await renderAgentsTemplate(agentsTemplatePath, privateAgentContext);
+  const appendSystem = await readUtf8(appendSystemPath);
   const mcpConfig = await readManagedMcpConfig(mcpConfigPath);
   const renderedSettings = await renderSettingsTemplate(
     join(sourceRoot, "settings.template.json"),
@@ -124,6 +126,7 @@ async function main(): Promise<void> {
   await copyDirectory(promptsSource, join(options.targetDirectory, "prompts"));
   await copyDirectory(skillsSource, join(options.targetDirectory, "skills"));
   await writeManagedFile(join(options.targetDirectory, "AGENTS.md"), renderedAgents);
+  await writeManagedFile(join(options.targetDirectory, "APPEND_SYSTEM.md"), appendSystem);
   await writeManagedFile(
     join(options.targetDirectory, "mcp.json"),
     `${JSON.stringify(mcpConfig, null, 2)}\n`,

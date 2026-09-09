@@ -33,7 +33,7 @@ Sync refuses to write settings that point at missing built extension entry point
 - the secret-free `config/pi/agent/mcp.json`
 - a rendered `settings.json` with absolute extension paths
 
-The three tracked Sol/Terra/Luna definitions, prompts, skills, and MCP declaration are repository-authoritative. Sync tracks managed agent filenames in `agents/.pi-setup-managed-agents.json`, replaces only those files, and preserves unrelated user agents created through `/agents`. Copy intentional edits to Sol/Terra/Luna back into the repository before the next sync. Sync never touches OAuth credentials, `auth.json`, `trust.json`, MCP metadata caches, sessions, or run history.
+The two tracked Sol/Luna definitions, prompts, skills, and MCP declaration are repository-authoritative. Sync tracks managed agent filenames in `agents/.pi-setup-managed-agents.json`, replaces only those files, and preserves unrelated user agents created through `/agents`. Copy intentional edits to Sol/Luna back into the repository before the next sync. Sync never touches OAuth credentials, `auth.json`, `trust.json`, MCP metadata caches, sessions, or run history.
 
 The managed `AGENTS.md` is intentionally small: it carries always-on operating defaults and tells the agent to suggest a Pi skill when a session reveals a repeatable workflow, checklist, or specialized procedure.
 
@@ -57,23 +57,27 @@ Managed skills currently include:
 - `project-notes` for searching and updating a canonical Notion project page without creating per-session logs.
 - `pr-stewardship` for PR identity checks, semantic rebases, push safety, and CI follow-through.
 - `adversarial-review` for challenging risky implementation claims with focused evidence.
+- `prompt-tuning` for auditing and rewriting `AGENTS.md`, skills, and agent definitions against current GPT-6 Astra / GPT-5.6 prompting guidance; the captured guidance lives in its `references/` directory.
 - `web-dogfood` for browser and visual QA through `agent-browser`.
 
-Managed user agents are:
+Managed user agents form two tiers:
 
-- `sol` (`gpt-5.6-sol`) for ambiguous, cross-cutting, architecture-heavy, or high-risk work;
-- `terra` (`gpt-5.6-terra`) for bounded implementation, debugging, refactoring, tests, and routine review;
-- `luna` (`gpt-5.6-luna`) for read-only, well-scoped exploration and evidence gathering.
+- worker tier:
+  - `luna` (`gpt-5.6-luna`, medium thinking) for read-only, well-scoped exploration and evidence gathering by default, and for bounded implementation, debugging, refactoring, and tests when the task explicitly authorizes edits and names the checks; it is roughly a tenth of Sol's price, so cheap execution gets paired with Sol's expensive verification rather than the other way round;
+- reasoning/review tier:
+  - `sol` (`gpt-5.6-sol`, high thinking, read-only) for ambiguous, cross-cutting, or architecture-heavy reasoning and for adversarial review of a diff, plan, or implementation claim; it returns decisions and ranked findings and never edits.
+
+The main session defaults to `gpt-6-astra` with medium thinking and acts as the orchestrator; `gpt-5.6-sol` with high thinking remains available for the main session when a whole task is judgment-heavy. `config/pi/agent/APPEND_SYSTEM.md` is the orchestrator charter (delegate deliberately, leave touched code better than found, design for the architecture that scales); sync copies it to `~/.pi/agent/APPEND_SYSTEM.md` so every session carries it in its system prompt.
 
 The rendered settings default the main session and otherwise-unspecified subagents to:
 
 ```json
 {
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
-  "defaultThinkingLevel": "high",
+  "defaultModel": "gpt-6-astra",
+  "defaultThinkingLevel": "medium",
   "subagents": {
-    "defaultModel": "openai-codex/gpt-5.6-terra"
+    "defaultModel": "openai-codex/gpt-5.6-luna"
   }
 }
 ```
@@ -102,7 +106,7 @@ You can also open `/mcp`, select `notion`, and start OAuth there. The tracked en
 
 The repo-built `minimal-output` extension also runs by default. It compresses recognized Bash output from `tsc` / `typecheck`, lint commands, test runners, build tools, and package-manager installs/updates into short summaries before those results enter model context. Direct `vitest run` / `jest` commands, and `pnpm test` / `npm test` scripts that directly run Vitest or Jest, are rewritten to structured JSON reporter output plus a compact summary CLI when safe, so failures are surfaced from machine-readable reports instead of brittle terminal formatting. Vitest also gets `--silent=passed-only` unless already configured. Use `/minimal-output-savings` to inspect session savings. Commands and outputs it cannot confidently parse, or summaries that would not be smaller, pass through unchanged.
 
-The repo-built `tool-pruner` extension intersects its default allowlist with Pi's current active-tool set, so it never re-enables tools excluded by CLI flags or a subagent such as read-only Luna. The normal callable set includes `read`, `bash`, `edit`, `write`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, `get_search_content`, and `mcp`. Keep the packages installed but opt additional available tools back in per session with environment variables, for example:
+The repo-built `tool-pruner` extension intersects its default allowlist with Pi's current active-tool set, so it never re-enables tools excluded by CLI flags or a subagent such as read-only Sol. The normal callable set includes `read`, `bash`, `edit`, `write`, `usage_insights_report`, `subagent`, `subagent_status`, `web_search`, `fetch_content`, `get_search_content`, and `mcp`. Keep the packages installed but opt additional available tools back in per session with environment variables, for example:
 
 ```bash
 PI_TOOL_PRUNER_EXTRA_ALLOW="code_search" pi
@@ -120,7 +124,7 @@ pnpm pi:doctor
 
 It verifies the config template, agent definitions, secret-free Notion MCP declaration, prompts, skills, and built extension entry points. It also reports whether a synced `settings.json` already exists in your Pi home.
 
-For user agents, `pnpm pi:doctor` checks required metadata, exact Sol/Terra/Luna model routing, project-context inheritance, and disabled nested delegation. For skills, it checks that each `SKILL.md` starts with YAML frontmatter and includes the required `name` and `description` fields.
+For user agents, `pnpm pi:doctor` checks required metadata, exact Sol/Luna model routing, project-context inheritance, and disabled nested delegation. For skills, it checks that each `SKILL.md` starts with YAML frontmatter and includes the required `name` and `description` fields.
 For third-party package defaults, it also checks that every `npm:` source is pinned to an exact version and that the curated versions in `config/pi/agent/package-policy.json` satisfy the 7-day minimum release age. It validates the final rendered settings after applying `config/pi/private/settings.overlay.json` when that private overlay exists.
 
 ## Private sync inputs

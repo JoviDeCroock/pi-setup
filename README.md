@@ -27,10 +27,11 @@ The repo is optimized for maintainability and verification, not for a single dem
   - `agent-device` for mobile, TV, and desktop device automation via the `agent-device` CLI, with companion `dogfood` and `react-devtools` skills
   - `extension-maintainer` for this repository's extension workflow
   - `session-lessons` for inspecting Pi session history and turning repeated assistant mistakes into corrective skills or context updates
+  - `prompt-tuning` for auditing `AGENTS.md`, skills, and agent definitions against current OpenAI prompting guidance
   - `project-notes` for maintaining canonical Notion project pages
   - `pr-stewardship` and `adversarial-review` for safe PR completion and evidence-backed challenge passes
   - `web-dogfood` for responsive, theme, console, network, and visual browser QA
-- Deliberate user agents under `config/pi/agent/agents/`: Sol for deep judgment, Terra for bounded implementation, and Luna for read-only exploration
+- Two-tier user agents under `config/pi/agent/agents/`: Luna as the low-cost worker (scouting and bounded implementation) and Sol as the read-only deep-reasoning and review agent
 - Example project-scoped `.pi/settings.json` wiring under `examples/local-project/`
 - Scripts for syncing config and checking install health
 - Unit tests, linting, formatting, and GitHub Actions CI
@@ -89,13 +90,13 @@ scripts/                   Repo automation for sync and diagnostics
 - `pnpm typecheck` runs a single repo-wide TypeScript check
 - `pnpm verify` runs lint, format check, typecheck, tests, build, and `pi:doctor`
 - `pnpm pi:doctor` validates config files and built extension entry points
-- `pnpm pi:sync` renders `config/pi/agent/settings.template.json` into a concrete Pi config and copies prompts and skills into your Pi home
+- `pnpm pi:sync` renders `config/pi/agent/settings.template.json` into a concrete Pi config and copies `AGENTS.md`, `APPEND_SYSTEM.md`, prompts, and skills into your Pi home
 
 ## Starter extensions
 
 ### `usage-insights`
 
-Registers `usage_insights_report`, plus a minimal `turn_end` hook that records compact session usage points with `appendEntry()`. Reporting works against the active session when possible and can also read exported JSONL session files.
+Registers `usage_insights_report`, plus a minimal `turn_end` hook that records compact session usage points with `appendEntry()`. A `tool_call` hook also records each `subagent` dispatch (single-agent and task-batch forms, not list or status actions) so the report can show delegations per agent and per tier: `luna` counts as worker, `sol` as reasoning/review, and anything else as other. That makes it visible whether the orchestrator delegates the way the global `AGENTS.md` asks. Reporting works against the active session when possible and can also read exported JSONL session files.
 
 ### `minimal-output`
 
@@ -122,7 +123,7 @@ Uses Pi's documented active-tool API to keep the callable tool list small before
 
 The generated global `settings.json` also includes curated third-party package defaults from `config/pi/agent/package-policy.json`. Every `npm:` source is pinned to an exact version, and the repo only promotes npm releases once they are at least 7 days old.
 
-The synced Pi config defaults the main orchestrator session to `openai-codex/gpt-5.6-sol` with high thinking, and subagents without their own model override to `openai-codex/gpt-5.6-terra`. Named `sol`, `terra`, and `luna` definitions make task-based selection explicit. It also sets `npmCommand` to `["pnpm"]`, so Pi runs package lookups and installs through `pnpm` rather than the default npm client. The package source syntax still stays `npm:...` because that is Pi's package source type, not a lock-in to the npm CLI binary.
+The synced Pi config defaults the main orchestrator session to `openai-codex/gpt-6-astra` with medium thinking; switch to `openai-codex/gpt-5.6-sol` with high thinking when a session needs deeper reasoning. Subagents without their own model override default to `openai-codex/gpt-5.6-luna`. Named `luna` (worker tier) and `sol` (reasoning/review tier) definitions make task-based selection explicit, and `APPEND_SYSTEM.md` carries the orchestrator charter into every session's system prompt. It also sets `npmCommand` to `["pnpm"]`, so Pi runs package lookups and installs through `pnpm` rather than the default npm client. The package source syntax still stays `npm:...` because that is Pi's package source type, not a lock-in to the npm CLI binary.
 
 - `npm:pi-powerline-footer` for the powerline-style footer and related UI affordances
 - `npm:@tmustier/pi-usage-extension` for the `/usage` dashboard
@@ -130,7 +131,7 @@ The synced Pi config defaults the main orchestrator session to `openai-codex/gpt
 - `npm:pi-web-access` for `web_search`, `code_search`, `fetch_content`, and `get_search_content` tools
 - `npm:pi-mcp-adapter` for the compact `mcp` proxy and OAuth connection to Notion
 
-`tool-pruner` keeps only the commonly useful third-party tools active by default: `subagent`, `subagent_status`, `web_search`, `fetch_content`, `get_search_content`, and `mcp`, while preserving stricter runtime boundaries such as Luna's read-only tool set. Less frequently needed tools such as `code_search` stay installed but out of the model prompt until you opt them back in with `PI_TOOL_PRUNER_ALLOW` or `PI_TOOL_PRUNER_EXTRA_ALLOW`. The MCP scripting tool and bundled scripting skill are disabled because this setup intentionally uses the smaller proxy workflow.
+`tool-pruner` keeps only the commonly useful third-party tools active by default: `subagent`, `subagent_status`, `web_search`, `fetch_content`, `get_search_content`, and `mcp`, while preserving stricter runtime boundaries such as Sol's read-only tool set. Less frequently needed tools such as `code_search` stay installed but out of the model prompt until you opt them back in with `PI_TOOL_PRUNER_ALLOW` or `PI_TOOL_PRUNER_EXTRA_ALLOW`. The MCP scripting tool and bundled scripting skill are disabled because this setup intentionally uses the smaller proxy workflow.
 
 ## Docs
 
