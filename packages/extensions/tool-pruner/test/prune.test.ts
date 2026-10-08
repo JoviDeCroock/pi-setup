@@ -43,6 +43,19 @@ test("resolveAllowedToolNames lets explicit allow replace defaults and deny remo
   );
 });
 
+test("resolveAllowedToolNames removes the context handoff tools as an atomic pair", () => {
+  assert.deepEqual(
+    resolveAllowedToolNames({ env: { PI_TOOL_PRUNER_ALLOW: "read,history_note" } }),
+    ["read"],
+  );
+  assert.deepEqual(
+    resolveAllowedToolNames({ env: { PI_TOOL_PRUNER_DENY: "new_context" } }).filter(
+      (name) => name === "history_note" || name === "new_context",
+    ),
+    [],
+  );
+});
+
 test("pruneToolNames keeps only allowed tools while preserving available order", () => {
   assert.deepEqual(
     pruneToolNames({

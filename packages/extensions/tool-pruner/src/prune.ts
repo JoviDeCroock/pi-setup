@@ -3,6 +3,8 @@ export const DEFAULT_ALLOWED_TOOL_NAMES = [
   "bash",
   "edit",
   "write",
+  "history_note",
+  "new_context",
   "usage_insights_report",
   "subagent",
   "subagent_status",
@@ -49,7 +51,12 @@ export function resolveAllowedToolNames(options: ResolveAllowedToolNamesOptions 
       ? explicitAllow
       : [...(options.defaultAllowed ?? DEFAULT_ALLOWED_TOOL_NAMES)];
 
-  return uniqueToolNames([...base, ...extraAllow]).filter((name) => !denied.has(name));
+  const allowed = uniqueToolNames([...base, ...extraAllow]).filter((name) => !denied.has(name));
+  const hasHistoryNote = allowed.includes("history_note");
+  const hasNewContext = allowed.includes("new_context");
+  return hasHistoryNote === hasNewContext
+    ? allowed
+    : allowed.filter((name) => name !== "history_note" && name !== "new_context");
 }
 
 export function pruneToolNames(options: PruneToolNamesOptions): PruneToolNamesResult {
